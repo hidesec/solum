@@ -1,0 +1,40 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "./src",
+    "paths": {
+      "@config/*": [
+        "./src/config/*"
+      ],
+      "@controllers/*": [
+        "./src/controllers/*"
+      ],
+      "@database/*": [
+        "./src/database/*"
+      ],
+      "@dto/*": [
+        "./src/dto/*"
+      ],
+      "@entities/*": [
+        "./src/entities/*"
+      ],
+      "@repositories/*": [
+        "./src/repositories/*"
+      ],
+      "@services/*": [
+        "./src/services/*"
+      ],
+      "@tasks/*": [
+        "./src/tasks/*"
+      ]
+    },
+    "types": [
+      "node",
+      "jest"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

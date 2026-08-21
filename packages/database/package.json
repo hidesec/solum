@@ -1,0 +1,50 @@
+{
+  "name": "@solumjs/database",
+  "version": "0.1.0",
+  "description": "SolumJS database: multi-driver connections, repositories, migrations",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@solumjs/core": "^0.1.0",
+    "@solumjs/orm": "^0.1.0",
+    "@solumjs/http": "^0.1.0"
+  },
+  "peerDependencies": {
+    "pg": "^8.23.0",
+    "mysql2": "^3.23.4",
+    "mssql": "^12.7.0",
+    "oracledb": "^7.0.1",
+    "mongodb": "^7.5.0"
+  },
+  "peerDependenciesMeta": {
+    "pg": {
+      "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    },
+    "mssql": {
+      "optional": true
+    },
+    "oracledb": {
+      "optional": true
+    },
+    "mongodb": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3",
+    "pg": "^8.23.0",
+    "mysql2": "^3.23.4"
+  }
+}

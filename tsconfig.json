@@ -1,33 +1,14 @@
 {
-    "compilerOptions": {
-        "target": "es2022",
-        "module": "commonjs",
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "outDir": "dist",
-        "rootDir": "./src",
-        "paths": {
-            "@auth/*": ["./src/auth/*"],
-            "@config/*": ["./src/config/*"],
-            "@core/*": ["./src/core/*"],
-            "@controllers/*": ["./src/controllers/*"],
-            "@database/*": ["./src/database/*"],
-            "@decorators/*": ["./src/decorators/*"],
-            "@di/*": ["./src/di/*"],
-            "@dto/*": ["./src/dto/*"],
-            "@entities/*": ["./src/entities/*"],
-            "@events/*": ["./src/events/*"],
-            "@http/*": ["./src/http/*"],
-            "@exceptions/*": ["./src/exceptions/*"],
-            "@lang/*": ["./src/lang/*"],
-            "@middlewares/*": ["./src/middlewares/*"],
-            "@repositories/*": ["./src/repositories/*"],
-            "@schedule/*": ["./src/schedule/*"],
-            "@services/*": ["./src/services/*"],
-            "@validation/*": ["./src/validation/*"]
-        }
-    }
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "commonjs",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ]
+  }
 }

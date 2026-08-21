@@ -1,0 +1,26 @@
+{
+  "name": "@solumjs/config",
+  "version": "0.1.0",
+  "description": "SolumJS bootstrap: component scanning, controller mounting, .env loading",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@solumjs/core": "^0.1.0",
+    "@solumjs/http": "^0.1.0",
+    "@solumjs/decorators": "^0.1.0",
+    "@solumjs/validation": "^0.1.0",
+    "@solumjs/auth": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3"
+  }
+}

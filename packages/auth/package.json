@@ -1,0 +1,24 @@
+{
+  "name": "@solumjs/auth",
+  "version": "0.1.0",
+  "description": "SolumJS auth: JWT service, password hashing, guards, RBAC roles",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@solumjs/core": "^0.1.0",
+    "@solumjs/http": "^0.1.0",
+    "@solumjs/decorators": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3"
+  }
+}

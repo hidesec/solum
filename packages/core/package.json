@@ -1,0 +1,19 @@
+{
+  "name": "@solumjs/core",
+  "version": "0.1.0",
+  "description": "SolumJS core: DI container, config/logger ports, HTTP exceptions",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3"
+  }
+}

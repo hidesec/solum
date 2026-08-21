@@ -1,50 +1,14 @@
 {
+  "name": "solumjs",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/app.ts",
-    "build": "tsc",
-    "start": "node -r ./prod-paths.js dist/app.js",
-    "test": "jest",
-    "migrate": "ts-node -r tsconfig-paths/register src/database/migrate.ts up",
-    "migrate:status": "ts-node -r tsconfig-paths/register src/database/migrate.ts status",
-    "migrate:generate": "ts-node -r tsconfig-paths/register src/database/generate-migration.ts",
-    "migrate:down": "ts-node -r tsconfig-paths/register src/database/migrate.ts down"
-  },
-  "dependencies": {
-    "mysql2": "^3.23.4",
-    "pg": "^8.23.0",
-    "redis": "^6.2.1"
-  },
-  "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "@types/node": "^26.2.0",
-    "@types/pg": "^8.23.1",
-    "jest": "^30.4.2",
-    "ts-jest": "^29.4.12",
-    "ts-node-dev": "^2.0.0",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^6.0.3"
-  },
-  "peerDependencies": {
-    "mongodb": "^7.5.0",
-    "mssql": "^12.7.0",
-    "oracledb": "^7.0.1",
-    "redis": "^6.2.1"
-  },
-  "peerDependenciesMeta": {
-    "mysql2": {
-      "optional": true
-    },
-    "mssql": {
-      "optional": true
-    },
-    "oracledb": {
-      "optional": true
-    },
-    "mongodb": {
-      "optional": true
-    },
-    "redis": {
-      "optional": true
-    }
+    "build": "npm run build --workspace @solumjs/core && npm run build --workspace @solumjs/http && npm run build --workspace @solumjs/decorators && npm run build --workspace @solumjs/orm && npm run build --workspace @solumjs/database && npm run build --workspace @solumjs/cache && npm run build --workspace @solumjs/auth && npm run build --workspace @solumjs/events && npm run build --workspace @solumjs/schedule && npm run build --workspace @solumjs/validation && npm run build --workspace @solumjs/middlewares && npm run build --workspace @solumjs/config && npm run build --workspace backend-example",
+    "test": "npm run test --workspace backend-example",
+    "dev": "npm run dev --workspace backend-example",
+    "migrate": "npm run migrate --workspace backend-example"
   }
 }

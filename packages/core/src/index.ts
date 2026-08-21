@@ -8,3 +8,4 @@ export * from "./http-exceptions";
 export * from "./autowired.decorator";
 export * from "./bean.decorator";
 export * from "./lifecycle.decorator";
+export * from "./profile.decorator";

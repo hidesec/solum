@@ -4,6 +4,7 @@ export type Token<T = unknown> = string | (new (...args: any[]) => T);
 
 export interface ClassRegistration {
     useClass: new (...args: any[]) => any;
+    when?: () => boolean;
 }
 
 export interface ValueRegistration {
@@ -73,6 +74,12 @@ export function resolve<T = unknown>(token: Token<T>): T {
     } else if ("useValue" in registration) {
         instance = registration.useValue;
     } else {
+        if (registration.when && !registration.when()) {
+            throw new Error(
+                `Bean "${String(token)}" is not available in the active environment. ` +
+                `Its @Profile condition evaluated to false.`
+            );
+        }
         instance = construct(registration.useClass);
     }
 

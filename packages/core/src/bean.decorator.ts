@@ -1,6 +1,7 @@
 import "./reflect-metadata";
 import { container } from "./container";
 import { registerDestroyHook, registerLifecycleHooks } from "./lifecycle.decorator";
+import { getProfileCondition } from "./profile.decorator";
 
 const BEAN_METADATA_KEY = "custom:bean-methods";
 
@@ -18,7 +19,10 @@ export function Bean(token?: string, options?: BeanMethodOptions) {
     return function (target: any, propertyKey?: string, _descriptor?: PropertyDescriptor) {
         if (propertyKey === undefined) {
             const registrationToken = token ?? target.name;
-            container.register(registrationToken, { useClass: target });
+            container.register(registrationToken, {
+                useClass: target,
+                when: getProfileCondition(target),
+            });
             registerLifecycleHooks(registrationToken, target);
             return target
         }

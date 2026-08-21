@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@solumjs/core": "^0.1.0",
-    "@solumjs/decorators": "^0.1.0"
+    "@solumjs/aop": "^0.1.0"
   },
   "peerDependencies": {
     "redis": "^6.2.1"

@@ -1,4 +1,4 @@
-import { Bean } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
 import { BaseRepository } from "@solumjs/database";
 import { IUserRepository } from "./user.repository.interface";
 import { User } from "@entities/user.entity";

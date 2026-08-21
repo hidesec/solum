@@ -1,6 +1,6 @@
 import { getFrameworkConfig } from "@solumjs/core";
 
-import { Around, JoinPoint } from "@solumjs/decorators";
+import { Around, JoinPoint } from "@solumjs/aop";
 
 export interface CacheStore {
     readonly name: string;

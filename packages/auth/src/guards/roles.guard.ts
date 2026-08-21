@@ -1,5 +1,5 @@
-import { Bean } from "@solumjs/decorators";
-import { CanActivate, ExecutionContext, getRequiredRoles } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
+import { CanActivate, ExecutionContext, getRequiredRoles } from "@solumjs/http";
 import { ForbiddenException, UnauthorizedException } from "@solumjs/core";
 import { getPrincipal, AuthenticatedRequest } from "./jwt-auth.guard";
 

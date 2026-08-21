@@ -1,4 +1,4 @@
-import { registerLifecycleHooks } from "./lifecycle.decorator";
+import { registerLifecycleHooks } from "@solumjs/core";
 
 export type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 

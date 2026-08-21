@@ -1,7 +1,7 @@
 import "@solumjs/core";
 import { container } from "@solumjs/core";
 import { ForbiddenException } from "@solumjs/core";
-import { SolumjsRequest, SolumjsResponse } from "@solumjs/http";
+import { SolumjsRequest, SolumjsResponse } from "./http-types";
 
 export interface ExecutionContext {
     classRef: Function;

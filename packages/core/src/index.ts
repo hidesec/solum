@@ -5,3 +5,6 @@ export * from "./framework-config";
 export * from "./framework-logger";
 export * from "./container";
 export * from "./http-exceptions";
+export * from "./autowired.decorator";
+export * from "./bean.decorator";
+export * from "./lifecycle.decorator";

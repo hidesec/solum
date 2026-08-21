@@ -9,7 +9,7 @@ import {
     setFrameworkLogger,
 } from "@solumjs/core";
 import { NodeHttpAdapter, SolumjsMiddleware } from "@solumjs/http";
-import { runPreDestroyHooks } from "@solumjs/decorators";
+import { runPreDestroyHooks } from "@solumjs/core";
 import { DatabaseDriver, registerDatabaseDriver } from "@solumjs/orm";
 import { connectMongo, createDatabaseDriver } from "@solumjs/database";
 import {
@@ -130,13 +130,13 @@ export async function createApplication(
     });
 
     const server = adapter.listen(port, () => {
+        options.onListen?.(port);
         const routes = listRegisteredRoutes();
         logger.info(`Routes registered (${routes.length}):`);
         routes.forEach((r) => {
             logger.info(`  ${r.method.padEnd(6)} ${r.path}`);
         });
         startScheduledTasks();
-        options.onListen?.(port);
     }) as import("http").Server;
 
     const application: SolumApplication = {

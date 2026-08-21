@@ -1,7 +1,7 @@
 {
-  "name": "@solumjs/decorators",
+  "name": "@solumjs/aop",
   "version": "0.1.0",
-  "description": "SolumJS decorators: controllers, routes, DI, guards, AOP",
+  "description": "SolumJS AOP: method interceptors, execution logging, audit trail decorators",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,8 +13,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@solumjs/core": "^0.1.0",
-    "@solumjs/http": "^0.1.0"
+    "@solumjs/core": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

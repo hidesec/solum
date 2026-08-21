@@ -1,6 +1,6 @@
-import { Get, RestController } from "@solumjs/decorators";
+import { AutoWired } from "@solumjs/core";
 import { ServiceUnavailableException } from "@solumjs/core";
-import { AutoWired } from "@solumjs/decorators";
+import { Get, RestController } from "@solumjs/http";
 import { DatabaseDriver } from "@solumjs/orm";
 
 @RestController()

@@ -1,7 +1,6 @@
 import { JwtPayload } from "../jwt.service.interface";
-import { AutoWired } from "@solumjs/decorators";
-import { Bean } from "@solumjs/decorators";
-import { CanActivate, ExecutionContext } from "@solumjs/decorators";
+import { AutoWired, Bean } from "@solumjs/core";
+import { CanActivate, ExecutionContext } from "@solumjs/http";
 import { UnauthorizedException } from "@solumjs/core";
 import { SolumjsRequest } from "@solumjs/http";
 import { IJwtService } from "../jwt.service.interface";

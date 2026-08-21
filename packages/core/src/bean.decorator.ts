@@ -1,5 +1,5 @@
-import "@solumjs/core";
-import { container } from "@solumjs/core";
+import "./reflect-metadata";
+import { container } from "./container";
 import { registerDestroyHook, registerLifecycleHooks } from "./lifecycle.decorator";
 
 const BEAN_METADATA_KEY = "custom:bean-methods";

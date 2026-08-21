@@ -1,6 +1,6 @@
 import { SolumjsRequest } from "@solumjs/http";
 import { getFrameworkLogger } from "@solumjs/core";
-import { ControllerAdvice, ExceptionHandler } from "@solumjs/decorators";
+import { ControllerAdvice, ExceptionHandler } from "./exception-handler.decorator";
 import {
     BadRequestException,
     ForbiddenException,

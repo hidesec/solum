@@ -15,7 +15,6 @@
   "dependencies": {
     "@solumjs/core": "^0.1.0",
     "@solumjs/http": "^0.1.0",
-    "@solumjs/decorators": "^0.1.0",
     "@solumjs/validation": "^0.1.0",
     "@solumjs/auth": "^0.1.0",
     "@solumjs/orm": "^0.1.0",

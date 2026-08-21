@@ -8,12 +8,9 @@ import { UserResponseDto } from "@dto/user-response.dto";
 import { CreateUserDto } from "@dto/create-user.dto";
 import { UpdateRoleDto } from "@dto/update-role.dto";
 import { IUserService } from "@services/user.service.interface";
-import { Delete, Get, Patch, Post, RestController } from "@solumjs/decorators";
-import { ResponseStatus } from "@solumjs/decorators";
-import { AutoWired } from "@solumjs/decorators";
-import { ExceptionHandler } from "@solumjs/decorators";
-import { Roles, UseGuards } from "@solumjs/decorators";
-import { Body, CurrentUser, Param, Query, Req, Valid } from "@solumjs/decorators";
+import { AutoWired } from "@solumjs/core";
+import { Body, CurrentUser, Delete, Get, Param, Patch, Post, Query, Req, ResponseStatus, RestController, Roles, UseGuards, Valid } from "@solumjs/http";
+import { ExceptionHandler } from "@solumjs/middlewares";
 import { ConflictException, InvalidQueryParameterException } from "@solumjs/core";
 
 @RestController("/users")

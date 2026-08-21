@@ -1,4 +1,4 @@
-import { Bean } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
 import { IRefreshTokenStore } from "./refresh-token.store.interface";
 
 @Bean("IRefreshTokenStore")

@@ -1,5 +1,5 @@
 import { logger } from "@config/logger";
-import { Bean } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
 import { EventListener } from "@solumjs/events";
 
 interface UserCreatedPayload {

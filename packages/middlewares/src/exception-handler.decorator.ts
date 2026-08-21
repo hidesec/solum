@@ -1,5 +1,5 @@
 import "@solumjs/core";
-import { registerLifecycleHooks } from "./lifecycle.decorator";
+import { registerLifecycleHooks } from "@solumjs/core";
 
 type ExceptionClass = new (...args: any[]) => Error;
 

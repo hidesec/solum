@@ -1,6 +1,6 @@
 import { inject } from "@solumjs/core";
 import { LoginRequestDto } from "@dto/login.dto";
-import { Bean } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
 import { UnauthorizedException } from "@solumjs/core";
 import { IUserRepository } from "@repositories/user.repository.interface";
 import { verifyPassword } from "@solumjs/auth";

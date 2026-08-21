@@ -1,6 +1,6 @@
-import "@solumjs/core";
-import { container } from "@solumjs/core";
-import { getFrameworkLogger } from "@solumjs/core";
+import "./reflect-metadata";
+import { container } from "./container";
+import { getFrameworkLogger } from "./framework-logger";
 
 const POST_CONSTRUCT_METADATA_KEY = "custom:post-construct";
 const PRE_DESTROY_METADATA_KEY = "custom:pre-destroy";

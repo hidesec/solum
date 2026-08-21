@@ -1,5 +1,5 @@
 import { logger } from "@config/logger";
-import { Bean } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
 import { cacheManager } from "@solumjs/cache";
 import { Scheduled } from "@solumjs/schedule";
 

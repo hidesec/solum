@@ -1,7 +1,7 @@
 import "@solumjs/core";
 import { container } from "@solumjs/core";
 import { getFrameworkLogger } from "@solumjs/core";
-import { Bean } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
 
 const listeners: { eventType: string; target: Function; methodName: string }[] = [];
 

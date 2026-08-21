@@ -1,5 +1,5 @@
-import "@solumjs/core";
-import { container } from "@solumjs/core";
+import "./reflect-metadata";
+import { container } from "./container";
 
 const AUTOWIRED_CACHE_KEY = Symbol("autowired-cache");
 

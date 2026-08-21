@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { getFrameworkConfig } from "@solumjs/core";
-import { Bean } from "@solumjs/decorators";
+import { Bean } from "@solumjs/core";
 import { signJwt, verifyJwt } from "./crypto.util";
 import { IJwtService, JwtPayload, TokenClaims, TokenType } from "./jwt.service.interface";
 

@@ -1,8 +1,6 @@
 import { IAuthService } from "@services/auth.service.interface";
-import { AutoWired } from "@solumjs/decorators";
-import { Post, RestController } from "@solumjs/decorators";
-import { ResponseStatus } from "@solumjs/decorators";
-import { Body, Valid } from "@solumjs/decorators";
+import { AutoWired } from "@solumjs/core";
+import { Body, Post, ResponseStatus, RestController, Valid } from "@solumjs/http";
 import { LoginRequestDto } from "@dto/login.dto";
 import { RefreshTokenDto } from "@dto/refresh-token.dto";
 

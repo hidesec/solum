@@ -1,5 +1,28 @@
 import fs from "fs";
 import path from "path";
+import { ConfigPort } from "@solumjs/core";
+
+export function createEnvConfig(source: Record<string, unknown>): ConfigPort {
+    const read = (key: string): string | undefined => {
+        const value = source[key];
+        return value === undefined || value === null || value === "" ? undefined : String(value);
+    };
+
+    return {
+        get: read,
+        getNumber: (key) => {
+            const value = read(key);
+            if (value === undefined) return undefined;
+            const parsed = Number(value);
+            return Number.isNaN(parsed) ? undefined : parsed;
+        },
+        getBoolean: (key) => {
+            const value = read(key);
+            if (value === undefined) return undefined;
+            return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+        },
+    };
+}
 
 function parseEnvFile(content: string): Record<string, string> {
     const parsed: Record<string, string> = {};

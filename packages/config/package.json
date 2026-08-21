@@ -17,7 +17,12 @@
     "@solumjs/http": "^0.1.0",
     "@solumjs/decorators": "^0.1.0",
     "@solumjs/validation": "^0.1.0",
-    "@solumjs/auth": "^0.1.0"
+    "@solumjs/auth": "^0.1.0",
+    "@solumjs/orm": "^0.1.0",
+    "@solumjs/database": "^0.1.0",
+    "@solumjs/cache": "^0.1.0",
+    "@solumjs/schedule": "^0.1.0",
+    "@solumjs/middlewares": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

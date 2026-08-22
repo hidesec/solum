@@ -7,8 +7,14 @@
   ],
   "scripts": {
     "build": "npm run build --workspace @solumjs/core && npm run build --workspace @solumjs/http && npm run build --workspace @solumjs/aop && npm run build --workspace @solumjs/orm && npm run build --workspace @solumjs/database && npm run build --workspace @solumjs/cache && npm run build --workspace @solumjs/auth && npm run build --workspace @solumjs/events && npm run build --workspace @solumjs/schedule && npm run build --workspace @solumjs/validation && npm run build --workspace @solumjs/middlewares && npm run build --workspace @solumjs/config && npm run build --workspace backend-example",
-    "test": "npm run test --workspace backend-example",
+    "test": "npm test --workspaces --if-present",
     "dev": "npm run dev --workspace backend-example",
-    "migrate": "npm run migrate --workspace backend-example"
+    "migrate": "npm run migrate --workspace backend-example",
+    "typecheck": "for p in packages/*/; do (cd \"$p\" && npx tsc -p tsconfig.json --noEmit) || exit 1; done"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.12"
   }
 }

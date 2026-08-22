@@ -1,5 +1,4 @@
-import { JwtAuthGuard } from "@solumjs/auth";
-import { RolesGuard } from "@solumjs/auth";
+import { JwtAuthGuard, PreAuthorize } from "@solumjs/auth";
 import { JwtPayload } from "@solumjs/auth";
 import { UserRole } from "@solumjs/auth";
 import { SolumjsRequest } from "@solumjs/http";
@@ -9,7 +8,7 @@ import { CreateUserDto } from "@dto/create-user.dto";
 import { UpdateRoleDto } from "@dto/update-role.dto";
 import { IUserService } from "@services/user.service.interface";
 import { AutoWired } from "@solumjs/core";
-import { Body, CurrentUser, Delete, Get, Param, Patch, Post, Query, Req, ResponseStatus, RestController, Roles, UseGuards, Valid } from "@solumjs/http";
+import { Body, CurrentUser, Delete, Get, Param, Patch, Post, Query, Req, ResponseStatus, RestController, UseGuards, Valid } from "@solumjs/http";
 import { ExceptionHandler } from "@solumjs/middlewares";
 import { ConflictException, InvalidQueryParameterException } from "@solumjs/core";
 
@@ -63,6 +62,7 @@ export class UserController {
     @Get("/me")
     @ResponseStatus(200)
     @UseGuards(JwtAuthGuard)
+    @PreAuthorize("isAuthenticated()")
     async me(@CurrentUser() principal: JwtPayload, @Req() req: SolumjsRequest) {
         req.log.info({ userId: principal.sub }, "Fetching current user profile");
         return UserResponseDto.fromEntity(await this.userService.getUserById(principal.sub));
@@ -81,8 +81,8 @@ export class UserController {
 
     @Delete("/:id")
     @ResponseStatus(200)
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles("ADMIN")
+    @UseGuards(JwtAuthGuard)
+    @PreAuthorize("hasRole('ADMIN')")
     async deleteUser(@Param("id") id: string, @Req() req: SolumjsRequest) {
         req.log.info({ param: id }, "Deleting user");
         await this.userService.deleteUser(id);
@@ -91,8 +91,8 @@ export class UserController {
 
     @Patch("/:id/role")
     @ResponseStatus(200)
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles("ADMIN")
+    @UseGuards(JwtAuthGuard)
+    @PreAuthorize("hasRole('ADMIN')")
     async updateRole(
         @Param("id") id: string,
         @Valid() @Body() dto: UpdateRoleDto,

@@ -6,3 +6,6 @@ export * from "./refresh-token.store.interface";
 export * from "./roles";
 export * from "./guards/jwt-auth.guard";
 export * from "./guards/roles.guard";
+export * from "./expression-evaluator";
+export * from "./pre-authorize.guard";
+export * from "./pre-authorize.decorator";

@@ -1,0 +1,27 @@
+{
+  "name": "@solumjs/testing",
+  "version": "0.1.0",
+  "description": "SolumJS testing utilities: MockMvc, createTestApplication, mock helpers",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "@solumjs/core": "^0.1.0",
+    "@solumjs/http": "^0.1.0",
+    "@solumjs/config": "^0.1.0",
+    "@solumjs/orm": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3"
+  }
+}

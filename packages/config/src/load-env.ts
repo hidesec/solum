@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ConfigPort } from "@solumjs/core";
+import { createYamlConfig, loadProfileConfig } from "./profile-config";
 
 export function createEnvConfig(source: Record<string, unknown>): ConfigPort {
     const read = (key: string): string | undefined => {
@@ -61,4 +62,8 @@ export function loadEnv(fileName: string = ".env"): void {
             process.env[key] = value;
         }
     }
+}
+
+export function loadApplicationConfig(configDir?: string, configFileName?: string): Record<string, string> {
+    return createYamlConfig(configDir, configFileName);
 }

@@ -1,0 +1,23 @@
+{
+  "name": "@solumjs/cli",
+  "version": "0.1.0",
+  "description": "SolumJS CLI: scaffold controllers, services, entities, and more",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "solum": "bin/solum"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3"
+  }
+}

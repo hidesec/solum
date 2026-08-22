@@ -8,10 +8,17 @@ export interface ValidationError {
 export interface ValidateOptions {
     whitelist?: boolean;
     forbidNonWhitelisted?: boolean;
+    groups?: string[];
 }
 
 function isOptional(rules: ValidationRule[]): boolean {
     return rules.some((rule) => rule.name === "isOptional");
+}
+
+function appliesToGroups(rule: ValidationRule, selected: string[] | undefined): boolean {
+    if (!rule.groups || rule.groups.length === 0) return true;
+    if (!selected || selected.length === 0) return false;
+    return rule.groups.some((group) => selected.includes(group));
 }
 
 export function toInstance<T extends object>(ctor: new (...args: any[]) => T, plain: unknown): T {
@@ -50,13 +57,15 @@ export function validateInstance(
     }
 
     for (const [property, propertyRules] of rules.entries()) {
+        const activeRules = propertyRules.filter((rule) => appliesToGroups(rule, options.groups));
+
         const value = (instance as Record<string, unknown>)[property];
 
-        if ((value === undefined || value === null) && isOptional(propertyRules)) {
+        if ((value === undefined || value === null) && isOptional(activeRules)) {
             continue;
         }
 
-        for (const rule of propertyRules) {
+        for (const rule of activeRules) {
             if (rule.name === "isOptional") continue;
 
             if (!rule.validate(value)) {

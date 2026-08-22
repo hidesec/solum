@@ -4,12 +4,14 @@ import { SolumjsHandler } from "./http-types";
 export interface RouteMatch {
     handler: SolumjsHandler;
     params: Record<string, string>;
+    patternPath: string;
 }
 
 interface RouteEntry {
     method: string;
     segments: string[];
     handler: SolumjsHandler;
+    patternPath: string;
 }
 
 function normalize(path: string): string {
@@ -40,6 +42,7 @@ export class Router {
             method: method.toUpperCase(),
             segments: pattern.split("/").filter(Boolean),
             handler,
+            patternPath: pattern,
         });
     }
 
@@ -52,7 +55,7 @@ export class Router {
         for (const route of this.routes) {
             if (route.method !== method.toUpperCase()) continue;
             const params = matchSegments(route.segments, parts);
-            if (params) return { handler: route.handler, params };
+            if (params) return { handler: route.handler, params, patternPath: route.patternPath };
         }
         return undefined;
     }

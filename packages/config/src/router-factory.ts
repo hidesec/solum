@@ -1,7 +1,7 @@
 import { container } from "@solumjs/core";
 import { BadRequestException } from "@solumjs/core";
 import { toInstance, validateInstance } from "@solumjs/validation";
-import { ParamMetadata, ParamSource, ValidOptions, getClassGuards, getHandlerGuards, getParamType, getParamsMetadata, getRegisteredControllers, getResponseStatus, getRoutesMetadata, runGuards } from "@solumjs/http";
+import { ParamMetadata, ParamSource, ValidOptions, getClassGuards, getHandlerGuards, getParamType, getParamsMetadata, getRegisteredControllers, getResponseStatus, getRoutesMetadata, runGuards, getControllerInterceptors, getHandlerInterceptors, HandlerInterceptor, resolveInterceptors } from "@solumjs/http";
 import { findMostSpecificHandler, getExceptionHandlers, getRegisteredAdvice } from "@solumjs/middlewares";
 import { HttpAdapter } from "@solumjs/http";
 import { SolumjsNext, SolumjsRequest, SolumjsResponse } from "@solumjs/http";
@@ -131,9 +131,31 @@ function wrapHandler(
     }
 
     const successStatus = getResponseStatus(controllerTarget, handlerName, 200);
+    const declaredInterceptors: HandlerInterceptor[] = [
+        ...getControllerInterceptors(controllerTarget),
+        ...getHandlerInterceptors(controllerTarget, handlerName),
+    ];
 
     return async (req: SolumjsRequest, res: SolumjsResponse, next: SolumjsNext): Promise<void> => {
+        const interceptors = [...resolveInterceptors(req.method, req.path), ...declaredInterceptors];
+        let outcomeError: unknown;
+
         try {
+            let stopped = false;
+            for (const interceptor of interceptors) {
+                if ((await interceptor.preHandle?.(req, res)) === false) {
+                    stopped = true;
+                    break;
+                }
+            }
+
+            if (stopped) {
+                if (!res.headersSent) {
+                    res.status(204).end();
+                }
+                return;
+            }
+
             const guards = [...getClassGuards(controllerTarget), ...getHandlerGuards(controllerTarget, handlerName)];
             if (guards.length > 0) {
                 await runGuards(guards, { classRef: controllerTarget, handlerName, request: req, response: res });
@@ -142,18 +164,21 @@ function wrapHandler(
             const args = await resolveHandlerArgs(controllerTarget, handlerName, req, res, next);
             const result = await handler.apply(instance, args);
 
-            if (res.headersSent) {
-                return;
+            if (!res.headersSent) {
+                if (result === undefined) {
+                    res.status(successStatus).end();
+                } else {
+                    res.status(successStatus).json(result);
+                }
             }
 
-            if (result === undefined) {
-                res.status(successStatus).end();
-                return;
+            for (let i = interceptors.length - 1; i >= 0; i--) {
+                await interceptors[i].postHandle?.(req, res);
             }
-
-            res.status(successStatus).json(result);
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
+            outcomeError = error;
+
             if (await tryHandleWithExceptionHandlers(error, controllerTarget, instance, req, res)) {
                 return;
             }
@@ -166,6 +191,10 @@ function wrapHandler(
             }
 
             next(error);
+        } finally {
+            for (const interceptor of interceptors) {
+                await interceptor.afterCompletion?.(req, res, outcomeError);
+            }
         }
     };
 }

@@ -2,7 +2,18 @@ import http, { IncomingMessage, Server, ServerResponse } from "http";
 import { BadRequestException, PayloadTooLargeException, runWithRequestContext } from "@solumjs/core";
 import { HttpAdapter, RouteRegistration } from "./http-adapter";
 import { Router } from "./router";
+import { parseCookies, serializeSetCookie } from "./cookies";
+import { extractBoundary, parseMultipart } from "./multipart";
 import {
+    addInterceptors as addInterceptorsToRegistry,
+    InterceptorRegistrationOptions,
+    InterceptorClass,
+    HandlerInterceptor,
+} from "./interceptor";
+import { serveStatic, StaticOptions } from "./static";
+import {
+    CookieOptions,
+    SolumEventStream,
     SolumjsLogger,
     SolumjsMiddleware,
     SolumjsRequest,
@@ -21,7 +32,7 @@ interface AdapterOptions {
     errorHandler: (err: Error, req: SolumjsRequest, res: SolumjsResponse) => void;
 }
 
-function toSolumjsRequest(req: IncomingMessage, body: unknown): SolumjsRequest {
+function toSolumjsRequest(req: IncomingMessage, body: unknown, files?: import("./http-types").UploadedFile[]): SolumjsRequest {
     const url = new URL(req.url ?? "/", "http://internal");
 
     return {
@@ -33,10 +44,25 @@ function toSolumjsRequest(req: IncomingMessage, body: unknown): SolumjsRequest {
         body,
         log: consoleFallbackLogger,
         raw: req,
+        cookies: parseCookies(req.headers.cookie),
+        files,
     };
 }
 
 function toSolumjsResponse(res: ServerResponse): SolumjsResponse {
+    let setCookieHeaders: string[] | undefined;
+
+    function appendSetCookie(cookie: string): void {
+        const existing = res.getHeader("set-cookie");
+        const previous = Array.isArray(existing)
+            ? existing.map(String)
+            : existing !== undefined
+              ? [String(existing)]
+              : [];
+        setCookieHeaders = [...(setCookieHeaders ?? previous), cookie];
+        res.setHeader("set-cookie", setCookieHeaders);
+    }
+
     const wrapper: SolumjsResponse = {
         status(code: number) {
             res.statusCode = code;
@@ -49,6 +75,53 @@ function toSolumjsResponse(res: ServerResponse): SolumjsResponse {
         end() {
             res.end();
         },
+        write(chunk: string | Buffer) {
+            return res.write(chunk);
+        },
+        setCookie(name: string, value: string, options?: CookieOptions) {
+            appendSetCookie(serializeSetCookie(name, value, options));
+            return wrapper;
+        },
+        clearCookie(name: string, options?: CookieOptions) {
+            appendSetCookie(serializeSetCookie(name, "", { ...options, maxAge: 0 }));
+            return wrapper;
+        },
+        sse(): SolumEventStream {
+            res.setHeader("content-type", "text/event-stream");
+            res.setHeader("cache-control", "no-cache, no-transform");
+            res.setHeader("connection", "keep-alive");
+            res.flushHeaders();
+
+            let closed = false;
+
+            const stream: SolumEventStream = {
+                send(data: unknown, event?: string) {
+                    if (closed || res.writableEnded) return false;
+                    const payload =
+                        typeof data === "string" ? data.replace(/\r?\n/g, "\ndata: ") : JSON.stringify(data);
+                    const frame = `${event ? `event: ${event}\n` : ""}data: ${payload}\n\n`;
+                    return res.write(frame);
+                },
+                comment(text: string) {
+                    if (closed || res.writableEnded) return false;
+                    return res.write(`: ${text}\n\n`);
+                },
+                close() {
+                    if (closed) return;
+                    closed = true;
+                    res.end();
+                },
+                get closed() {
+                    return closed || res.writableEnded;
+                },
+            };
+
+            res.on("close", () => {
+                closed = true;
+            });
+
+            return stream;
+        },
         get headersSent() {
             return res.headersSent;
         },
@@ -57,7 +130,12 @@ function toSolumjsResponse(res: ServerResponse): SolumjsResponse {
     return wrapper;
 }
 
-function readBody(req: IncomingMessage, limitBytes: number): Promise<unknown> {
+interface ReadBodyResult {
+    body: unknown;
+    files?: import("./http-types").UploadedFile[];
+}
+
+function collectRawBody(req: IncomingMessage, limitBytes: number): Promise<Buffer | undefined> {
     return new Promise((resolveBody, rejectBody) => {
         const chunks: Buffer[] = [];
         let size = 0;
@@ -78,21 +156,41 @@ function readBody(req: IncomingMessage, limitBytes: number): Promise<unknown> {
 
         req.on("end", () => {
             if (failed) return;
-
-            if (chunks.length === 0) {
-                resolveBody(undefined);
-                return;
-            }
-
-            try {
-                resolveBody(JSON.parse(Buffer.concat(chunks).toString("utf8")));
-            } catch {
-                rejectBody(new BadRequestException("Malformed JSON body"));
-            }
+            resolveBody(chunks.length === 0 ? undefined : Buffer.concat(chunks));
         });
 
         req.on("error", rejectBody);
     });
+}
+
+async function readBody(incoming: IncomingMessage, limitBytes: number): Promise<ReadBodyResult> {
+    const raw = await collectRawBody(incoming, limitBytes);
+    if (!raw) return { body: undefined };
+
+    const contentType = (incoming.headers["content-type"] ?? "").split(";")[0].trim().toLowerCase();
+
+    if (contentType === "multipart/form-data") {
+        const boundary = extractBoundary(incoming.headers["content-type"]);
+        if (!boundary) {
+            throw new BadRequestException("Malformed multipart request: missing boundary");
+        }
+        const parsed = parseMultipart(raw, boundary);
+        return { body: parsed.fields, files: parsed.files.length > 0 ? parsed.files : undefined };
+    }
+
+    if (contentType === "application/x-www-form-urlencoded") {
+        return { body: Object.fromEntries(new URLSearchParams(raw.toString("utf8")).entries()) };
+    }
+
+    if (contentType === "application/json" || contentType === "") {
+        try {
+            return { body: JSON.parse(raw.toString("utf8")) };
+        } catch {
+            throw new BadRequestException("Malformed JSON body");
+        }
+    }
+
+    return { body: raw.toString("utf8") };
 }
 
 export class NodeHttpAdapter implements HttpAdapter {
@@ -104,6 +202,17 @@ export class NodeHttpAdapter implements HttpAdapter {
 
     use(...middlewares: SolumjsMiddleware[]): void {
         this.middlewares.push(...middlewares);
+    }
+
+    useStatic(rootDir: string, options: StaticOptions = {}): void {
+        this.use(serveStatic(rootDir, options));
+    }
+
+    addInterceptors(
+        interceptorOrClass: HandlerInterceptor | InterceptorClass,
+        options: InterceptorRegistrationOptions = {}
+    ): void {
+        addInterceptorsToRegistry(interceptorOrClass, options);
     }
 
     registerRoute(prefix: string, route: RouteRegistration): void {
@@ -126,25 +235,30 @@ export class NodeHttpAdapter implements HttpAdapter {
     }
 
     private async handleRequest(incoming: IncomingMessage, serverRes: ServerResponse): Promise<void> {
-        let body: unknown;
+        let bodyResult: ReadBodyResult = { body: undefined };
 
         if (["POST", "PUT", "PATCH", "DELETE"].includes((incoming.method ?? "").toUpperCase())) {
-            body = await readBody(incoming, this.options.bodyLimitBytes ?? 1024 * 1024);
+            bodyResult = await readBody(incoming, this.options.bodyLimitBytes ?? 1024 * 1024);
         }
 
-        const req = toSolumjsRequest(incoming, body);
+        const req = toSolumjsRequest(incoming, bodyResult.body, bodyResult.files);
         const res = toSolumjsResponse(serverRes);
 
         const stack: SolumjsMiddleware[] = [
             ...this.middlewares,
-            (rq, rs, next) => {
+            async (rq, rs, next) => {
                 const match = this.router.match(rq.method, rq.path);
                 if (!match) {
                     next();
                     return;
                 }
                 rq.params = match.params;
-                Promise.resolve(match.handler(rq, rs, next)).catch(next);
+
+                try {
+                    await Promise.resolve(match.handler(rq, rs, next));
+                } catch (err) {
+                    next(err);
+                }
             },
             (_rq, rs) => {
                 if (!rs.headersSent) {

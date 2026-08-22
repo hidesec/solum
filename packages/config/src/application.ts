@@ -26,6 +26,7 @@ import {
 } from "@solumjs/middlewares";
 import { componentScan } from "./component-scan";
 import { listRegisteredRoutes, mountControllers } from "./router-factory";
+import { DocsOptions, mountOpenApi } from "./openapi";
 
 export interface CreateApplicationOptions {
     logger?: LoggerPort;
@@ -38,6 +39,7 @@ export interface CreateApplicationOptions {
     autoDatabase?: boolean;
     autoCache?: boolean;
     autoMongo?: boolean;
+    docs?: boolean | DocsOptions;
     onListen?: (port: number) => void;
     shutdownTimeoutMs?: number;
 }
@@ -97,6 +99,14 @@ export async function createApplication(
     }
 
     mountControllers(adapter);
+
+    const docsOption = options.docs ?? true;
+    if (docsOption !== false && process.env.NODE_ENV !== "test") {
+        const docsConfig: DocsOptions = docsOption === true ? {} : docsOption;
+        if (docsConfig.enabled !== false) {
+            mountOpenApi(adapter, docsConfig);
+        }
+    }
 
     const port = options.port ?? config.getNumber("PORT") ?? 3000;
 

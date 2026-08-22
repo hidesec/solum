@@ -6,6 +6,22 @@ export interface SolumjsLogger {
     error(obj: object, msg?: string): void;
 }
 
+export interface UploadedFile {
+    fieldname: string;
+    filename: string;
+    encoding: string;
+    mimeType: string;
+    buffer: Buffer;
+    size: number;
+}
+
+export interface Session {
+    id: string;
+    data: Record<string, unknown>;
+    touch(): void;
+    destroy(): void;
+}
+
 export interface SolumjsRequest {
     method: string;
     path: string;
@@ -15,12 +31,35 @@ export interface SolumjsRequest {
     body: any;
     log: SolumjsLogger;
     raw: IncomingMessage;
+    cookies?: Record<string, string>;
+    files?: UploadedFile[];
+    session?: Session;
+}
+
+export interface CookieOptions {
+    maxAge?: number;
+    domain?: string;
+    path?: string;
+    secure?: boolean;
+    httpOnly?: boolean;
+    sameSite?: "Strict" | "Lax" | "None";
+}
+
+export interface SolumEventStream {
+    send(data: unknown, event?: string): boolean;
+    comment(text: string): boolean;
+    close(): void;
+    readonly closed: boolean;
 }
 
 export interface SolumjsResponse {
     status(code: number): this;
     json(body: unknown): void;
     end(): void;
+    write(chunk: string | Buffer): boolean;
+    setCookie(name: string, value: string, options?: CookieOptions): this;
+    clearCookie(name: string, options?: CookieOptions): this;
+    sse(): SolumEventStream;
     readonly headersSent: boolean;
     raw: ServerResponse;
 }

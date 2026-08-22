@@ -42,6 +42,7 @@ export interface ColumnMetadata extends ColumnOptions {
   isPrimary?: boolean;
   isCreatedAt?: boolean;
   isUpdatedAt?: boolean;
+  isVersion?: boolean;
 }
 
 export type CascadeAction = "CASCADE" | "SET NULL" | "RESTRICT" | "NO ACTION";
@@ -86,6 +87,17 @@ export interface IndexMetadata {
     columns:string[];
     unique?: boolean;
 }
+
+export type LifecycleEvent =
+  | "PrePersist"
+  | "PostPersist"
+  | "PreUpdate"
+  | "PostUpdate"
+  | "PreRemove"
+  | "PostRemove"
+  | "PostLoad";
+
+const LIFECYCLE_KEY = "custom:entity-lifecycle";
 
 const ENTITIES: Map<Function, EntityMetadata> = new Map();
 
@@ -155,6 +167,7 @@ function addColumn(target: any, propertyName: string, meta: Partial<ColumnMetada
     isPrimary: meta.isPrimary ?? false,
     isCreatedAt: meta.isCreatedAt ?? false,
     isUpdatedAt: meta.isUpdatedAt ?? false,
+    isVersion: meta.isVersion ?? false,
   });
 }
 
@@ -195,6 +208,56 @@ export function UpdatedAtColumn() {
   return function (target: any, propertyName: string) {
     addColumn(target, propertyName, { type: ColumnType.TIMESTAMPTZ, isUpdatedAt: true, default: "now()" });
   };
+}
+
+export function VersionColumn(type: ColumnType.INTEGER | ColumnType.BIGINT = ColumnType.INTEGER) {
+  return function (target: any, propertyName: string) {
+    addColumn(target, propertyName, { type, isVersion: true, default: "0" });
+  };
+}
+
+function addLifecycleListener(target: object, event: LifecycleEvent, methodName: string): void {
+  const ctor = target.constructor ?? target;
+  const existing = (Reflect.getOwnMetadata(LIFECYCLE_KEY, ctor) as Partial<Record<LifecycleEvent, string[]>>) ?? {};
+  existing[event] = [...(existing[event] ?? []), methodName];
+  Reflect.defineMetadata(LIFECYCLE_KEY, existing, ctor);
+}
+
+function lifecycleDecorator(event: LifecycleEvent): MethodDecorator {
+  return (target, propertyKey) => {
+    addLifecycleListener(target, event, String(propertyKey));
+  };
+}
+
+export const PrePersist = (): MethodDecorator => lifecycleDecorator("PrePersist");
+export const PostPersist = (): MethodDecorator => lifecycleDecorator("PostPersist");
+export const PreUpdate = (): MethodDecorator => lifecycleDecorator("PreUpdate");
+export const PostUpdate = (): MethodDecorator => lifecycleDecorator("PostUpdate");
+export const PreRemove = (): MethodDecorator => lifecycleDecorator("PreRemove");
+export const PostRemove = (): MethodDecorator => lifecycleDecorator("PostRemove");
+export const PostLoad = (): MethodDecorator => lifecycleDecorator("PostLoad");
+
+export function getLifecycleMethods(target: Function, event: LifecycleEvent): string[] {
+  const map = Reflect.getOwnMetadata(LIFECYCLE_KEY, target) as
+    | Partial<Record<LifecycleEvent, string[]>>
+    | undefined;
+  return map?.[event] ?? [];
+}
+
+export function runLifecycleCallbacks(
+  entity: object,
+  event: LifecycleEvent,
+  ctor?: Function
+): void {
+  const target = ctor ?? Object.getPrototypeOf(entity)?.constructor;
+  if (!target) return;
+  for (const methodName of getLifecycleMethods(target, event)) {
+    const method = (entity as any)[methodName];
+    if (typeof method !== "function") {
+      throw new Error(`@${event} callback "${methodName}" not found on entity "${target.name}"`);
+    }
+    method.call(entity);
+  }
 }
 
 function tableNameOf(entityFn: () => Function): string {
@@ -284,5 +347,6 @@ export function hydrateEntity<T extends object>(ctor: new (...args: any[]) => T,
   const instance = Object.create(ctor.prototype) as T;
   meta.columns.forEach((col) => { (instance as any)[col.propertyName] = row[col.columnName]; });
   meta.foreignKeys.forEach((fk) => { (instance as any)[fk.propertyName] = row[fk.columnName]; });
+  runLifecycleCallbacks(instance, "PostLoad", ctor);
   return instance;
 }

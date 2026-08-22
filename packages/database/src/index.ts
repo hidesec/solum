@@ -1,5 +1,6 @@
 export * from "./base.repository";
 export * from "./base-repository.interface";
+export * from "./optimistic-lock.exception";
 export * from "./migration-runner";
 export * from "./driver.factory";
 export * from "./transactional.decorator";

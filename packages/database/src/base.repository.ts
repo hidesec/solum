@@ -1,17 +1,79 @@
 import {
     ColumnMetadata, EntityMetadata, ForeignKeyMetadata, RelationInfo,
     getEntityMetadata, hydrateEntity,
+    runLifecycleCallbacks,
 } from "@solumjs/orm";
+import { bindPredicates, isDerivedQueryName, parseDerivedMethodName } from "@solumjs/orm";
 import { RelationLoader } from "@solumjs/orm";
 import { QueryBuilder } from "@solumjs/orm";
 import { getDatabaseDriver, getQueryRunner } from "@solumjs/orm";
 import { IBaseRepository } from "./base-repository.interface";
+import { OptimisticLockException } from "./optimistic-lock.exception";
 import { QueryResult } from "@solumjs/orm";
 import { Page, PageRequest } from "@solumjs/http";
 
 export abstract class BaseRepository<T extends object, ID = string> implements IBaseRepository<T, ID> {
     protected abstract readonly entityCtor: new (...args: any[]) => T;
     private _relationLoader?: RelationLoader<T>;
+
+    constructor() {
+        return new Proxy(this, {
+            get: (target, prop, receiver) => {
+                const value = Reflect.get(target, prop, receiver);
+                if (value !== undefined || typeof prop !== "string") {
+                    return value;
+                }
+                if (isDerivedQueryName(prop)) {
+                    return (...args: unknown[]) => target.executeDerivedQuery(prop, args);
+                }
+                return value;
+            },
+        }) as this;
+    }
+
+    private async executeDerivedQuery(methodName: string, args: unknown[]): Promise<unknown> {
+        const parsed = parseDerivedMethodName(methodName, this.meta);
+        const conditions = bindPredicates(parsed.predicates, args);
+        const qb = this.query();
+
+        for (const condition of conditions) {
+            if (condition.connector === "OR") {
+                qb.orWhereRaw(condition.sql, condition.params);
+            } else {
+                qb.whereRaw(condition.sql, condition.params);
+            }
+        }
+
+        switch (parsed.action) {
+            case "find": {
+                for (const order of parsed.orders) {
+                    qb.orderBy(order.columnName, order.direction);
+                }
+                return this.runHydrated(qb);
+            }
+            case "findOne":
+            case "findFirst": {
+                for (const order of parsed.orders) {
+                    qb.orderBy(order.columnName, order.direction);
+                }
+                qb.limit(1);
+                const [entity] = await this.runHydrated(qb);
+                return entity ?? null;
+            }
+            case "count":
+                return qb.count();
+            case "exists":
+                return (await qb.count()) > 0;
+            case "delete":
+                return qb.delete();
+        }
+    }
+
+    private async runHydrated(qb: QueryBuilder<T>): Promise<T[]> {
+        const { sql, params } = qb.toSQL();
+        const result = await getQueryRunner().query(sql, params);
+        return this.hydrateRows(result.rows);
+    }
 
     protected get meta(): EntityMetadata {
         const meta = getEntityMetadata(this.entityCtor);
@@ -154,7 +216,18 @@ export abstract class BaseRepository<T extends object, ID = string> implements I
 
     async save(entity: T): Promise<T> {
         const pk = this.primaryColumn;
+        const versionColumn = this.meta.columns.find((c) => c.isVersion);
+        const id = (entity as any)[pk.propertyName];
+        const isNew = id === undefined || id === null;
+
         this.applyTimestamps(entity);
+
+        if (versionColumn) {
+            return this.saveWithVersion(entity, { pk, versionColumn, isNew });
+        }
+
+        runLifecycleCallbacks(entity, isNew ? "PrePersist" : "PreUpdate", this.entityCtor);
+
         const columns = this.persistableColumns;
         const insertColumnNames = columns.map((c) => c.columnName);
         const values = columns.map((c) => (entity as any)[c.propertyName]);
@@ -177,8 +250,82 @@ export abstract class BaseRepository<T extends object, ID = string> implements I
             lastResult = await getQueryRunner().query(statement.sql, statement.params);
         }
 
+        runLifecycleCallbacks(entity, isNew ? "PostPersist" : "PostUpdate", this.entityCtor);
+
         const savedRow = lastResult.rows[0];
         return savedRow ? this.mapRow(savedRow) : entity;
+    }
+
+    private async saveWithVersion(
+        entity: T,
+        context: { pk: ColumnMetadata; versionColumn: ColumnMetadata; isNew: boolean }
+    ): Promise<T> {
+        const { pk, versionColumn, isNew } = context;
+
+        runLifecycleCallbacks(entity, isNew ? "PrePersist" : "PreUpdate", this.entityCtor);
+
+        const persistable = this.persistableColumns.filter(
+            (c) => !("isUpdatedAt" in c && c.isUpdatedAt)
+        );
+
+        if (isNew) {
+            (entity as any)[versionColumn.propertyName] =
+                (entity as any)[versionColumn.propertyName] ?? 0;
+
+            const columnNames = persistable.map((c) => c.columnName);
+            const values = persistable.map((c) => (entity as any)[c.propertyName]);
+
+            const plan = getDatabaseDriver().dialect.buildInsertReturning({
+                table: this.qualifiedTable,
+                columnNames,
+                values,
+                pkColumn: pk.columnName,
+            });
+
+            let lastResult: QueryResult = { rows: [], rowCount: 0 };
+            for (const statement of plan.statements) {
+                lastResult = await getQueryRunner().query(statement.sql, statement.params);
+            }
+
+            runLifecycleCallbacks(entity, "PostPersist", this.entityCtor);
+
+            const insertedRow = lastResult.rows[0];
+            return insertedRow ? this.mapRow(insertedRow) : entity;
+        }
+
+        const expectedVersion = (entity as any)[versionColumn.propertyName];
+        if (expectedVersion === undefined || expectedVersion === null) {
+            throw new OptimisticLockException(this.entityCtor.name, (entity as any)[pk.propertyName], expectedVersion);
+        }
+
+        const updatable = persistable.filter((c) => {
+            const isPk = "isPrimary" in c && c.isPrimary;
+            const isCreatedAt = "isCreatedAt" in c && c.isCreatedAt;
+            if (isPk || isCreatedAt) return false;
+            return c.columnName !== versionColumn.columnName;
+        });
+
+        const setClauses = [
+            ...updatable.map((c, i) => `${c.columnName} = $${i + 1}`),
+            `${versionColumn.columnName} = ${versionColumn.columnName} + 1`,
+        ];
+        const params: unknown[] = updatable.map((c) => (entity as any)[c.propertyName]);
+
+        const whereStart = setClauses.length + 1;
+        const sql =
+            `UPDATE ${this.qualifiedTable} SET ${setClauses.join(", ")} ` +
+            `WHERE ${pk.columnName} = $${whereStart} AND ${versionColumn.columnName} = $${whereStart + 1} ` +
+            `RETURNING *`;
+
+        params.push((entity as any)[pk.propertyName], expectedVersion);
+
+        const result = await getQueryRunner().query(sql, params);
+        if ((result.rowCount ?? 0) === 0) {
+            throw new OptimisticLockException(this.entityCtor.name, (entity as any)[pk.propertyName], expectedVersion);
+        }
+
+        runLifecycleCallbacks(entity, "PostUpdate", this.entityCtor);
+        return this.mapRow(result.rows[0]);
     }
 
     async deleteById(id: ID): Promise<void> {
@@ -188,6 +335,8 @@ export abstract class BaseRepository<T extends object, ID = string> implements I
 
     async delete(entity: T): Promise<void> {
         const pk = this.primaryColumn;
+        runLifecycleCallbacks(entity, "PreRemove", this.entityCtor);
         await this.deleteById((entity as any)[pk.propertyName]);
+        runLifecycleCallbacks(entity, "PostRemove", this.entityCtor);
     }
 }

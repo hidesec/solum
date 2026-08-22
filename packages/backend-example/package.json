@@ -10,7 +10,9 @@
     "migrate": "ts-node -r tsconfig-paths/register src/database/migrate.ts up",
     "migrate:status": "ts-node -r tsconfig-paths/register src/database/migrate.ts status",
     "migrate:generate": "ts-node -r tsconfig-paths/register src/database/generate-migration.ts",
-    "migrate:down": "ts-node -r tsconfig-paths/register src/database/migrate.ts down"
+    "migrate:down": "ts-node -r tsconfig-paths/register src/database/migrate.ts down",
+    "schema:sync": "ts-node -r tsconfig-paths/register src/database/sync-schema.ts validate",
+    "schema:sync:update": "ts-node -r tsconfig-paths/register src/database/sync-schema.ts update"
   },
   "dependencies": {
     "@solumjs/auth": "^0.1.0",

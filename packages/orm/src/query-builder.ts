@@ -118,6 +118,11 @@ export class QueryBuilder<T extends object> {
         return this;
     }
 
+    orWhereRaw(sql: string, params: any[] = []): this {
+        this.wheres.push({ type: "raw", connector: "OR", sql, params });
+        return this;
+    }
+
     join(table: string, leftColumn: string, operator: WhereOperator, rightColumn: string): this {
         this.joins.push({
             type: "INNER",

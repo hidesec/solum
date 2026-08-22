@@ -1,5 +1,5 @@
 import http, { IncomingMessage, Server, ServerResponse } from "http";
-import { BadRequestException, PayloadTooLargeException } from "@solumjs/core";
+import { BadRequestException, PayloadTooLargeException, runWithRequestContext } from "@solumjs/core";
 import { HttpAdapter, RouteRegistration } from "./http-adapter";
 import { Router } from "./router";
 import {
@@ -122,6 +122,10 @@ export class NodeHttpAdapter implements HttpAdapter {
     }
 
     private async handle(incoming: IncomingMessage, serverRes: ServerResponse): Promise<void> {
+        await runWithRequestContext(() => this.handleRequest(incoming, serverRes));
+    }
+
+    private async handleRequest(incoming: IncomingMessage, serverRes: ServerResponse): Promise<void> {
         let body: unknown;
 
         if (["POST", "PUT", "PATCH", "DELETE"].includes((incoming.method ?? "").toUpperCase())) {

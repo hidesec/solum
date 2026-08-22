@@ -1,5 +1,5 @@
 import "./reflect-metadata";
-import { container } from "./container";
+import { container, getRegistrationScope } from "./container";
 
 const AUTOWIRED_CACHE_KEY = Symbol("autowired-cache");
 
@@ -16,7 +16,18 @@ export function AutoWired(token: string) {
                 }
                 const cache = this[AUTOWIRED_CACHE_KEY];
                 if (!(propertyKey in cache)) {
-                    cache[propertyKey] = container.resolve(token);
+                    let scope: string | undefined;
+                    try {
+                        scope = getRegistrationScope(token);
+                    } catch {
+                        scope = undefined;
+                    }
+                    const value = container.resolve(token);
+                    if (!scope || scope === "singleton") {
+                        cache[propertyKey] = value;
+                        return value;
+                    }
+                    return value;
                 }
                 return cache[propertyKey];
             },

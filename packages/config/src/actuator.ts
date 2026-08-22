@@ -23,21 +23,6 @@ let requestCount = 0;
 let errorCount = 0;
 const responseTimes: number[] = [];
 
-export function incrementRequestCount(): void {
-    requestCount++;
-}
-
-export function incrementErrorCount(): void {
-    errorCount++;
-}
-
-export function recordResponseTime(ms: number): void {
-    responseTimes.push(ms);
-    if (responseTimes.length > 1000) {
-        responseTimes.shift();
-    }
-}
-
 function getAverageResponseTime(): number {
     if (responseTimes.length === 0) return 0;
     return responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;

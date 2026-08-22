@@ -1,19 +1,5 @@
 import path from "path";
-import { parseYaml, mergeYaml, flattenYaml, resolvePlaceholders, loadYamlFile, YamlDocument } from "./yaml-parser";
-
-export interface ProfileConfig {
-    profiles: string[];
-    activeProfile: string;
-    configDir: string;
-    configFileName: string;
-}
-
-const DEFAULT_CONFIG: ProfileConfig = {
-    profiles: [],
-    activeProfile: "development",
-    configDir: "",
-    configFileName: "application",
-};
+import { mergeYaml, flattenYaml, resolvePlaceholders, loadYamlFile, YamlDocument } from "./yaml-parser";
 
 function detectActiveProfile(): string {
     return process.env.SOLUM_PROFILE || process.env.NODE_ENV || "development";

@@ -1,5 +1,10 @@
 import { getFrameworkLogger } from "@solumjs/core";
 import { getActiveTransactionClient, getDatabaseDriver, runInTransactionContext } from "@solumjs/orm";
+import {
+    runWithTransactionSynchronization,
+    runAfterCommitHooks,
+    runAfterRollbackHooks,
+} from "@solumjs/orm";
 
 export function Transactional() {
     return function (
@@ -19,9 +24,18 @@ export function Transactional() {
             const driver = getDatabaseDriver();
 
             try {
-                return await driver.transaction((tx) =>
-                    runInTransactionContext(tx, () => originalMethod.apply(this, args))
-                );
+                return await runWithTransactionSynchronization(async () => {
+                    try {
+                        const result = await driver.transaction((tx) =>
+                            runInTransactionContext(tx, () => originalMethod.apply(this, args))
+                        );
+                        await runAfterCommitHooks();
+                        return result;
+                    } catch (txErr) {
+                        runAfterRollbackHooks();
+                        throw txErr;
+                    }
+                });
             } catch (err) {
                 getFrameworkLogger().warn({ method: propertyKey }, "Transactional rolled back");
                 throw err;

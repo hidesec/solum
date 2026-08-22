@@ -1,6 +1,6 @@
 import { logger } from "@config/logger";
 import { Bean } from "@solumjs/core";
-import { EventListener } from "@solumjs/events";
+import { TransactionalEventListener } from "@solumjs/events";
 
 interface UserCreatedPayload {
     userId: string;
@@ -9,7 +9,7 @@ interface UserCreatedPayload {
 
 @Bean()
 export class UserCreatedListener {
-    @EventListener("USER_CREATED")
+    @TransactionalEventListener("USER_CREATED")
     async onUserCreated(payload: UserCreatedPayload): Promise<void> {
         logger.info(
             { audit: true, event: "USER_CREATED", ...payload },

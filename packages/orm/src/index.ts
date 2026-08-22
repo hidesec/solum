@@ -7,3 +7,4 @@ export * from "./schema-sync";
 export * from "./types";
 export * from "./dialect";
 export * from "./transaction-context";
+export * from "./transaction-synchronization";

@@ -97,3 +97,5 @@ export function buildConditionalPredicate(target: Function): (() => boolean) | u
     if (!conditional) return undefined;
     return () => evaluateConditionalProperty(conditional);
 }
+
+export { AutoWired as Inject } from "./autowired.decorator";

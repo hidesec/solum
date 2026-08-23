@@ -310,3 +310,46 @@ export class MailService {
         return { ...this.config };
     }
 }
+
+export interface EmailTemplate {
+    name: string;
+    subject: string;
+    html: string;
+    text?: string;
+}
+
+export class TemplateEngine {
+    private templates = new Map<string, EmailTemplate>();
+
+    register(template: EmailTemplate): void {
+        this.templates.set(template.name, template);
+    }
+
+    render(templateName: string, data: Record<string, unknown>): { subject: string; html: string; text?: string } {
+        const template = this.templates.get(templateName);
+        if (!template) {
+            throw new Error(`Email template "${templateName}" not found`);
+        }
+
+        return {
+            subject: this.interpolate(template.subject, data),
+            html: this.interpolate(template.html, data),
+            text: template.text ? this.interpolate(template.text, data) : undefined,
+        };
+    }
+
+    private interpolate(template: string, data: Record<string, unknown>): string {
+        return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+            const value = data[key];
+            return value !== undefined ? String(value) : match;
+        });
+    }
+
+    getTemplateNames(): string[] {
+        return Array.from(this.templates.keys());
+    }
+}
+
+export function createTemplateEngine(): TemplateEngine {
+    return new TemplateEngine();
+}

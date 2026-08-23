@@ -5,6 +5,7 @@ export enum ParamSource {
     PARAM = "param",
     QUERY = "query",
     HEADER = "header",
+    COOKIE = "cookie",
     CURRENT_USER = "currentUser",
     REQ = "req",
     RES = "res",
@@ -60,6 +61,12 @@ export function Query(name?: string): ParameterDecorator {
 export function Header(name?: string): ParameterDecorator {
     return (target, propertyKey, index) => {
         addOrPatchParam(target, propertyKey as string, index, { source: ParamSource.HEADER, name });
+    };
+}
+
+export function CookieValue(name?: string): ParameterDecorator {
+    return (target, propertyKey, index) => {
+        addOrPatchParam(target, propertyKey as string, index, { source: ParamSource.COOKIE, name });
     };
 }
 

@@ -222,3 +222,146 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
         matchedHandler.handleConnection(client);
     });
 }
+
+export interface StompFrame {
+    command: string;
+    headers: Record<string, string>;
+    body: string;
+}
+
+export function parseStompFrame(raw: string): StompFrame | null {
+    const lines = raw.split("\r\n");
+    if (lines.length === 0) return null;
+
+    const command = lines[0].trim();
+    if (!command) return null;
+
+    const headers: Record<string, string> = {};
+    let bodyStartIndex = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+        if (lines[i] === "") {
+            bodyStartIndex = i + 1;
+            break;
+        }
+        const colonIndex = lines[i].indexOf(":");
+        if (colonIndex > 0) {
+            const key = lines[i].slice(0, colonIndex).trim();
+            const value = lines[i].slice(colonIndex + 1).trim();
+            headers[key] = value;
+        }
+    }
+
+    const body = lines.slice(bodyStartIndex).join("\r\n").replace(/\0$/, "");
+
+    return { command, headers, body };
+}
+
+export function serializeStompFrame(command: string, headers: Record<string, string> = {}, body: string = ""): string {
+    let frame = command + "\r\n";
+    for (const [key, value] of Object.entries(headers)) {
+        frame += `${key}:${value}\r\n`;
+    }
+    frame += "\r\n" + body + "\0";
+    return frame;
+}
+
+const STOMP_HANDLER_METADATA = "custom:stomp-handler";
+const STOMP_SUBSCRIPTIONS = new Map<string, Set<WsClient>>();
+
+export function MessageMapping(destination: string): MethodDecorator {
+    return function (target: any, propertyKey: string | symbol) {
+        const existing: Array<{ destination: string; methodName: string }> =
+            Reflect.getOwnMetadata(STOMP_HANDLER_METADATA, target.constructor) || [];
+        existing.push({ destination, methodName: propertyKey as string });
+        Reflect.defineMetadata(STOMP_HANDLER_METADATA, existing, target.constructor);
+    };
+}
+
+export function getStompHandlers(target: Function): Array<{ destination: string; methodName: string }> {
+    return Reflect.getOwnMetadata(STOMP_HANDLER_METADATA, target) || [];
+}
+
+export function StompHandler(): ClassDecorator {
+    return function (target: any) {
+        Reflect.defineMetadata(WS_HANDLER_METADATA, "/stomp", target);
+        container.register(target, { useClass: target });
+    };
+}
+
+export function createStompHandler(instance: any): WsHandler {
+    const handlers = getStompHandlers(instance.constructor);
+
+    return {
+        handleConnection(client: WsClient) {
+            client.onMessage((msg) => {
+                const frame = parseStompFrame(msg.data);
+                if (!frame) return;
+
+                switch (frame.command) {
+                    case "CONNECT":
+                    case "STOMP":
+                        client.send(serializeStompFrame("CONNECTED", { version: "1.2" }));
+                        break;
+
+                    case "SUBSCRIBE": {
+                        const destination = frame.headers["destination"];
+                        const id = frame.headers["id"] || destination;
+                        if (destination) {
+                            if (!STOMP_SUBSCRIPTIONS.has(destination)) {
+                                STOMP_SUBSCRIPTIONS.set(destination, new Set());
+                            }
+                            STOMP_SUBSCRIPTIONS.get(destination)!.add(client);
+                            client.send(serializeStompFrame("RECEIPT", { "receipt-id": id }));
+                        }
+                        break;
+                    }
+
+                    case "UNSUBSCRIBE": {
+                        const dest = frame.headers["destination"];
+                        if (dest) {
+                            STOMP_SUBSCRIPTIONS.get(dest)?.delete(client);
+                        }
+                        break;
+                    }
+
+                    case "SEND": {
+                        const dest = frame.headers["destination"];
+                        if (dest) {
+                            const handler = handlers.find((h) => h.destination === dest);
+                            if (handler) {
+                                const method = instance[handler.methodName];
+                                if (typeof method === "function") {
+                                    const result = method.call(instance, frame.body, client);
+                                    if (result !== undefined) {
+                                        client.send(serializeStompFrame("MESSAGE", { destination: dest }, String(result)));
+                                    }
+                                }
+                            }
+
+                            const subscribers = STOMP_SUBSCRIPTIONS.get(dest);
+                            if (subscribers) {
+                                for (const sub of subscribers) {
+                                    if (sub.id !== client.id) {
+                                        sub.send(serializeStompFrame("MESSAGE", { destination: dest }, frame.body));
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                    case "DISCONNECT":
+                        client.close();
+                        break;
+                }
+            });
+
+            client.onClose(() => {
+                for (const subscribers of STOMP_SUBSCRIPTIONS.values()) {
+                    subscribers.delete(client);
+                }
+            });
+        },
+    };
+}

@@ -15,6 +15,7 @@ export {
     HttpPut,
     HttpPatch,
     HttpDelete,
+    Retryable,
     RequestInterceptor,
     UseRequestInterceptor,
     getRequestInterceptors,
@@ -30,9 +31,26 @@ export {
     Delete,
     getRoutesMetadata,
     getRegisteredControllers,
+    MappingOptions,
 } from "./route.decorator";
 export * from "./response.decorator";
-export * from "./param.decorator";
+export {
+    Body,
+    Param,
+    Query,
+    Header,
+    CookieValue,
+    CurrentUser,
+    Req,
+    Res,
+    Next,
+    Valid,
+    ParamSource,
+    ParamMetadata,
+    ValidOptions,
+    getParamsMetadata,
+    getParamType,
+} from "./param.decorator";
 export * from "./guard.decorator";
 export {
     HandlerInterceptor,

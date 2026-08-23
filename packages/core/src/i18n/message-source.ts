@@ -129,3 +129,41 @@ export function setDefaultMessage(key: string, value: string): void {
 export function getDefaultMessage(key: string): string | undefined {
     return DEFAULT_MESSAGES.get(key);
 }
+
+export interface LocaleResolver {
+    resolveLocale(request: any): string;
+}
+
+export class AcceptHeaderLocaleResolver implements LocaleResolver {
+    private defaultLocale: string;
+
+    constructor(options: { defaultLocale?: string } = {}) {
+        this.defaultLocale = options.defaultLocale || "en";
+    }
+
+    resolveLocale(request: any): string {
+        const acceptLanguage = request.headers?.["accept-language"];
+        if (!acceptLanguage || typeof acceptLanguage !== "string") {
+            return this.defaultLocale;
+        }
+
+        const locales = acceptLanguage
+            .split(",")
+            .map((part) => {
+                const [locale, qStr] = part.trim().split(";");
+                const q = qStr ? parseFloat(qStr.replace("q=", "")) : 1;
+                return { locale: locale.trim(), q };
+            })
+            .sort((a, b) => b.q - a.q);
+
+        return locales.length > 0 ? locales[0].locale : this.defaultLocale;
+    }
+}
+
+export class FixedLocaleResolver implements LocaleResolver {
+    constructor(private locale: string) {}
+
+    resolveLocale(_request: any): string {
+        return this.locale;
+    }
+}

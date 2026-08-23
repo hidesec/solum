@@ -2,7 +2,7 @@ import "./reflect-metadata";
 import { AsyncLocalStorage } from "async_hooks";
 
 export type Token<T = unknown> = string | (new (...args: any[]) => T);
-export type BeanScope = "singleton" | "prototype" | "request";
+export type BeanScope = "singleton" | "prototype" | "request" | "session";
 
 export interface ClassRegistration {
     useClass: new (...args: any[]) => any;
@@ -77,6 +77,7 @@ type BeanFactoryPostProcessor = (registry: BeanDefinitionRegistry) => void;
 const definitions = new Map<Token, BeanEntry[]>();
 const inCreation = new Set<Token>();
 const pendingProxies = new Map<Token, DeferredRef[]>();
+const sessionBeans = new Map<string, unknown>();
 
 const beanPostProcessors: BeanPostProcessor[] = [];
 let beanFactoryPostProcessors: BeanFactoryPostProcessor[] = [];
@@ -275,6 +276,27 @@ function resolveClassBean(token: Token, entry: BeanEntry): unknown {
         if (cached !== undefined) return cached;
         const instance = instantiate(entry, token);
         store.beans.set(entry, instance);
+        return instance;
+    }
+
+    if (scope === "session") {
+        const store = requestStorage.getStore();
+        if (!store) {
+            throw new Error(
+                `Session-scoped bean "${String(token)}" accessed outside of an HTTP request.`
+            );
+        }
+        const sessionId = (store as any).sessionId;
+        if (!sessionId) {
+            throw new Error(
+                `Session-scoped bean "${String(token)}" requires an active session. Ensure session middleware is enabled.`
+            );
+        }
+        const sessionKey = `session:${sessionId}:${String(token)}`;
+        const cached = sessionBeans.get(sessionKey);
+        if (cached !== undefined) return cached;
+        const instance = instantiate(entry, token);
+        sessionBeans.set(sessionKey, instance);
         return instance;
     }
 
@@ -477,6 +499,7 @@ export function clear(): void {
     definitions.clear();
     inCreation.clear();
     pendingProxies.clear();
+    sessionBeans.clear();
     beanPostProcessors.length = 0;
     beanFactoryPostProcessors = [];
     factoryProcessed = false;

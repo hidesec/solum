@@ -6,6 +6,8 @@ interface RouteDefinition {
     method: HttpMethod;
     path: string;
     handlerName: string;
+    produces?: string[];
+    consumes?: string[];
 }
 
 interface ControllerRegistration {
@@ -24,11 +26,29 @@ export function RestController(prefix: string = "/") {
     };
 }
 
+export interface MappingOptions {
+    path?: string;
+    produces?: string[];
+    consumes?: string[];
+}
+
 function createMappingDecorator(method: HttpMethod) {
-    return function (path: string = "/") {
+    return function (pathOrOptions: string | MappingOptions = "/") {
         return function (target: any, propertyKey: string, _descriptor?: PropertyDescriptor) {
             const existingRoutes: RouteDefinition[] = Reflect.getMetadata(ROUTES_METADATA_KEY, target.constructor) || [];
-            existingRoutes.push({ method, path, handlerName: propertyKey });
+            let path = "/";
+            let produces: string[] | undefined;
+            let consumes: string[] | undefined;
+
+            if (typeof pathOrOptions === "string") {
+                path = pathOrOptions;
+            } else {
+                path = pathOrOptions.path || "/";
+                produces = pathOrOptions.produces;
+                consumes = pathOrOptions.consumes;
+            }
+
+            existingRoutes.push({ method, path, handlerName: propertyKey, produces, consumes });
             Reflect.defineMetadata(ROUTES_METADATA_KEY, existingRoutes, target.constructor);
         }
     }

@@ -17,6 +17,11 @@ export interface HttpMethodDefinition {
     path: string;
     paramName?: string;
     methodName?: string;
+    retry?: {
+        maxAttempts: number;
+        backoffMs?: number;
+        backoffMultiplier?: number;
+    };
 }
 
 export interface RequestInterceptor {
@@ -73,13 +78,32 @@ export function HttpClient(options: HttpClientOptions): ClassDecorator {
                                 requestConfig = await interceptor.intercept(requestConfig) as typeof requestConfig;
                             }
 
-                            return makeRequest({
+                            const executeRequest = () => makeRequest({
                                 method: requestConfig.method,
                                 url: requestConfig.url,
                                 body: requestConfig.body,
                                 headers: requestConfig.headers,
                                 timeout: options.timeout,
                             });
+
+                            if (def.retry) {
+                                const { maxAttempts, backoffMs = 100, backoffMultiplier = 2 } = def.retry;
+                                let lastError: unknown;
+                                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                                    try {
+                                        return await executeRequest();
+                                    } catch (error) {
+                                        lastError = error;
+                                        if (attempt < maxAttempts) {
+                                            const delay = Math.min(backoffMs * Math.pow(backoffMultiplier, attempt - 1), 30000);
+                                            await new Promise((r) => setTimeout(r, delay));
+                                        }
+                                    }
+                                }
+                                throw lastError;
+                            }
+
+                            return executeRequest();
                         };
                     }
                 }
@@ -113,6 +137,24 @@ export const HttpPost = createMethodDecorator("POST");
 export const HttpPut = createMethodDecorator("PUT");
 export const HttpPatch = createMethodDecorator("PATCH");
 export const HttpDelete = createMethodDecorator("DELETE");
+
+export function Retryable(options: { maxAttempts: number; backoffMs?: number; backoffMultiplier?: number }): MethodDecorator {
+    return function (target: any, propertyKey: string | symbol, _descriptor?: PropertyDescriptor) {
+        const existing: HttpMethodDefinition[] = Reflect.getMetadata(HTTP_METHOD_METADATA_KEY, target) || [];
+        const def = existing.find((d) => d.methodName === propertyKey);
+        if (def) {
+            def.retry = options;
+        } else {
+            existing.push({
+                method: "",
+                path: "",
+                methodName: propertyKey as string,
+                retry: options,
+            });
+        }
+        Reflect.defineMetadata(HTTP_METHOD_METADATA_KEY, existing, target);
+    };
+}
 
 interface RequestOptions {
     method: string;

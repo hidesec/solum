@@ -3,6 +3,36 @@ import { container, registerBeanPostProcessor } from "@solumjs/core";
 import { matchesPointcut, parsePointcut, ParsedPointcut } from "./pointcut";
 import type { JoinPoint } from "./aspect.decorator";
 
+const CB_METADATA = "custom:circuit-breaker";
+const RETRY_METADATA = "custom:retry";
+
+interface CircuitBreakerMeta {
+    methodName: string;
+    options: { failureThreshold?: number; resetTimeoutMs?: number; halfOpenMaxCalls?: number };
+}
+
+interface RetryMeta {
+    methodName: string;
+    options: { maxAttempts?: number; backoffMs?: number; backoffMultiplier?: number; maxBackoffMs?: number };
+}
+
+function getCircuitBreakerState(name: string, options: { failureThreshold: number; resetTimeoutMs: number }) {
+    const state = { failureCount: 0, lastFailureTime: 0, state: "CLOSED" as "CLOSED" | "OPEN" | "HALF_OPEN", halfOpenCalls: 0 };
+    return {
+        canExecute: () => {
+            if (state.state === "OPEN" && Date.now() - state.lastFailureTime >= options.resetTimeoutMs) {
+                state.state = "HALF_OPEN";
+                state.halfOpenCalls = 0;
+            }
+            if (state.state === "CLOSED") return true;
+            if (state.state === "HALF_OPEN" && state.halfOpenCalls < 1) { state.halfOpenCalls++; return true; }
+            return false;
+        },
+        recordSuccess: () => { if (state.state === "HALF_OPEN") { state.state = "CLOSED"; state.failureCount = 0; } },
+        recordFailure: () => { state.failureCount++; state.lastFailureTime = Date.now(); if (state.state === "HALF_OPEN" || state.failureCount >= options.failureThreshold) state.state = "OPEN"; },
+    };
+}
+
 export const ADVICE_METADATA_KEY = "custom:aspect-advices";
 export const ASPECT_MARKER_KEY = "custom:solum-aspect";
 
@@ -142,7 +172,12 @@ export function weaveIfApplicable<T>(instance: T): T {
         if (!descriptor || typeof descriptor.value !== "function") continue;
 
         const entries = collectEntries(className, propertyKey);
-        if (entries.length === 0) continue;
+        const cbMeta: CircuitBreakerMeta[] = (Reflect.getOwnMetadata(CB_METADATA, ctor) as CircuitBreakerMeta[]) || [];
+        const retryMeta: RetryMeta[] = (Reflect.getOwnMetadata(RETRY_METADATA, ctor) as RetryMeta[]) || [];
+        const hasCb = cbMeta.some((m) => m.methodName === propertyKey);
+        const hasRetry = retryMeta.some((m) => m.methodName === propertyKey);
+
+        if (entries.length === 0 && !hasCb && !hasRetry) continue;
         totalEntries += entries.length;
         candidates.push({ key: propertyKey, descriptor, entries });
     }
@@ -155,15 +190,54 @@ export function weaveIfApplicable<T>(instance: T): T {
         const methodName = candidate.key;
         const entries = candidate.entries;
 
+        const cbMeta: CircuitBreakerMeta[] = (Reflect.getOwnMetadata(CB_METADATA, ctor) as CircuitBreakerMeta[]) || [];
+        const retryMeta: RetryMeta[] = (Reflect.getOwnMetadata(RETRY_METADATA, ctor) as RetryMeta[]) || [];
+        const cb = cbMeta.find((m) => m.methodName === methodName);
+        const retry = retryMeta.find((m) => m.methodName === methodName);
+
         const woven = function (this: any, ...args: any[]) {
-            const joinPoint: JoinPoint = { target: this, className, methodName, args };
-            const active = entries.filter((entry) =>
-                matchesPointcut(entry.parsed, className, methodName, args.length)
-            );
-            if (active.length === 0) {
-                return original.apply(this, args);
+            const exec = () => {
+                const joinPoint: JoinPoint = { target: this, className, methodName, args };
+                const active = entries.filter((entry) =>
+                    matchesPointcut(entry.parsed, className, methodName, args.length)
+                );
+                if (active.length === 0) return original.apply(this, args);
+                return invokeChain(active, 0, joinPoint, () => original.apply(this, args));
+            };
+
+            let fn = exec;
+
+            if (retry) {
+                const { maxAttempts = 3, backoffMs = 100, backoffMultiplier = 2, maxBackoffMs = 30000 } = retry.options;
+                const retryFn = async () => {
+                    let lastError: unknown;
+                    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                        try { return await fn(); } catch (error) {
+                            lastError = error;
+                            if (attempt < maxAttempts) {
+                                await new Promise((r) => setTimeout(r, Math.min(backoffMs * Math.pow(backoffMultiplier, attempt - 1), maxBackoffMs)));
+                            }
+                        }
+                    }
+                    throw lastError;
+                };
+                fn = retryFn;
             }
-            return invokeChain(active, 0, joinPoint, () => original.apply(this, args));
+
+            if (cb) {
+                const breaker = getCircuitBreakerState(`${className}.${methodName}`, {
+                    failureThreshold: cb.options.failureThreshold ?? 5,
+                    resetTimeoutMs: cb.options.resetTimeoutMs ?? 30000,
+                });
+                const cbFn = async () => {
+                    if (!breaker.canExecute()) throw new Error(`Circuit breaker OPEN for ${className}.${methodName}`);
+                    try { const result = await fn(); breaker.recordSuccess(); return result; }
+                    catch (error) { breaker.recordFailure(); throw error; }
+                };
+                fn = cbFn;
+            }
+
+            return fn();
         };
 
         Object.defineProperty(prototype, methodName, {

@@ -6,6 +6,7 @@ export interface ActuatorOptions {
     basePath?: string;
     healthchecks?: HealthCheck[];
     info?: Record<string, unknown>;
+    customEndpoints?: CustomEndpoint[];
 }
 
 export interface HealthCheck {
@@ -16,6 +17,18 @@ export interface HealthCheck {
 export interface HealthStatus {
     status: "UP" | "DOWN" | "OUT_OF_SERVICE";
     details?: Record<string, unknown>;
+}
+
+export interface CustomEndpoint {
+    path: string;
+    method?: "get" | "post";
+    handler: (req: any, res: any) => void | Promise<void>;
+}
+
+const customEndpoints: CustomEndpoint[] = [];
+
+export function registerCustomEndpoint(endpoint: CustomEndpoint): void {
+    customEndpoints.push(endpoint);
 }
 
 const startTime = Date.now();
@@ -136,4 +149,13 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
             ...(options.info || {}),
         }),
     });
+
+    const allCustomEndpoints = [...customEndpoints, ...(options.customEndpoints || [])];
+    for (const endpoint of allCustomEndpoints) {
+        adapter.registerRoute(basePath, {
+            method: endpoint.method || "get",
+            path: endpoint.path,
+            handler: endpoint.handler,
+        });
+    }
 }

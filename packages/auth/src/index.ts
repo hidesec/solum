@@ -9,3 +9,4 @@ export * from "./guards/roles.guard";
 export * from "./expression-evaluator";
 export * from "./pre-authorize.guard";
 export * from "./pre-authorize.decorator";
+export * from "./oauth2";

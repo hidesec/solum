@@ -4,6 +4,7 @@ import { container } from "@solumjs/core";
 
 const HTTP_CLIENT_METADATA_KEY = "custom:http-client";
 const HTTP_METHOD_METADATA_KEY = "custom:http-methods";
+const HTTP_INTERCEPTOR_METADATA_KEY = "custom:http-interceptor";
 
 export interface HttpClientOptions {
     baseUrl: string;
@@ -18,6 +19,23 @@ export interface HttpMethodDefinition {
     methodName?: string;
 }
 
+export interface RequestInterceptor {
+    intercept(request: { method: string; url: string; headers: Record<string, string>; body?: unknown }): Promise<{ method: string; url: string; headers: Record<string, string>; body?: unknown }> | { method: string; url: string; headers: Record<string, string>; body?: unknown };
+}
+
+export function UseRequestInterceptor(interceptorClass: new (...args: any[]) => RequestInterceptor): ClassDecorator {
+    return function (target: any) {
+        const existing: (new (...args: any[]) => RequestInterceptor)[] =
+            Reflect.getOwnMetadata(HTTP_INTERCEPTOR_METADATA_KEY, target) || [];
+        existing.push(interceptorClass);
+        Reflect.defineMetadata(HTTP_INTERCEPTOR_METADATA_KEY, existing, target);
+    };
+}
+
+export function getRequestInterceptors(target: Function): (new (...args: any[]) => RequestInterceptor)[] {
+    return Reflect.getOwnMetadata(HTTP_INTERCEPTOR_METADATA_KEY, target) || [];
+}
+
 export function HttpClient(options: HttpClientOptions): ClassDecorator {
     return function (target: any) {
         Reflect.defineMetadata(HTTP_CLIENT_METADATA_KEY, options, target);
@@ -26,6 +44,7 @@ export function HttpClient(options: HttpClientOptions): ClassDecorator {
             construct(_ctor, args) {
                 const instance = new target(...args);
                 const methods: HttpMethodDefinition[] = Reflect.getMetadata(HTTP_METHOD_METADATA_KEY, target.prototype) || [];
+                const interceptorClasses = getRequestInterceptors(target);
 
                 for (const def of methods) {
                     if (!def.methodName) continue;
@@ -42,11 +61,23 @@ export function HttpClient(options: HttpClientOptions): ClassDecorator {
 
                             const body = def.method !== "GET" && def.method !== "DELETE" ? methodArgs[def.paramName ? 1 : 0] : undefined;
 
-                            return makeRequest({
+                            let requestConfig = {
                                 method: def.method,
                                 url,
+                                headers: { ...options.headers } as Record<string, string>,
                                 body,
-                                headers: options.headers,
+                            };
+
+                            for (const interceptorClass of interceptorClasses) {
+                                const interceptor = container.resolve(interceptorClass);
+                                requestConfig = await interceptor.intercept(requestConfig) as typeof requestConfig;
+                            }
+
+                            return makeRequest({
+                                method: requestConfig.method,
+                                url: requestConfig.url,
+                                body: requestConfig.body,
+                                headers: requestConfig.headers,
                                 timeout: options.timeout,
                             });
                         };

@@ -10,3 +10,6 @@ export * from "./bean.decorator";
 export * from "./lifecycle.decorator";
 export * from "./profile.decorator";
 export * from "./bean-meta.decorators";
+export * from "./resilience";
+export * from "./metrics";
+export * from "./tracing";

@@ -8,7 +8,19 @@ export * from "./path-match";
 export * from "./multipart";
 export * from "./static";
 export * from "./session";
-export * from "./http-client";
+export {
+    HttpClient,
+    HttpGet,
+    HttpPost,
+    HttpPut,
+    HttpPatch,
+    HttpDelete,
+    RequestInterceptor,
+    UseRequestInterceptor,
+    getRequestInterceptors,
+    HttpClientOptions,
+    HttpMethodDefinition,
+} from "./http-client";
 export {
     RestController,
     Get,

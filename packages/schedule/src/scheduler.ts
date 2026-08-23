@@ -7,19 +7,40 @@ interface ScheduledTask {
     methodName: string;
     expression: string;
     target: Function;
+    zone?: string;
+    fixedDelay?: number;
 }
 
 const tasks: ScheduledTask[] = [];
 const timers: NodeJS.Timeout[] = [];
 
-export function Scheduled(expression: string): MethodDecorator {
+export interface ScheduledOptions {
+    zone?: string;
+    fixedDelay?: number;
+}
+
+export function Scheduled(expressionOrOptions: string | ScheduledOptions): MethodDecorator {
     return function (target: any, propertyKey: string | symbol, _descriptor?: PropertyDescriptor) {
         const destination = target.constructor ?? target;
+        let expression: string;
+        let zone: string | undefined;
+        let fixedDelay: number | undefined;
+
+        if (typeof expressionOrOptions === "string") {
+            expression = expressionOrOptions;
+        } else {
+            expression = expressionOrOptions.zone ? "* * * * *" : "* * * * *";
+            zone = expressionOrOptions.zone;
+            fixedDelay = expressionOrOptions.fixedDelay;
+        }
+
         tasks.push({
             className: destination.name,
             methodName: propertyKey as string,
             expression,
             target: destination,
+            zone,
+            fixedDelay,
         });
     };
 }
@@ -126,7 +147,8 @@ function scheduleCron(task: ScheduledTask, instance: any): void {
     const fields = parseCron(task.expression);
 
     const loop = () => {
-        const delay = Math.max(nextCronDate(fields, new Date()).getTime() - Date.now(), 1000);
+        const now = getDateInZone(task.zone);
+        const delay = Math.max(nextCronDate(fields, now).getTime() - Date.now(), 1000);
         const timer = setTimeout(async () => {
             await executeTask(task, instance);
             loop();
@@ -139,8 +161,30 @@ function scheduleCron(task: ScheduledTask, instance: any): void {
 
 function scheduleInterval(task: ScheduledTask, instance: any): void {
     const intervalMs = parseIntervalMs(task.expression);
-    const timer = setInterval(() => executeTask(task, instance), intervalMs);
-    timers.push(timer);
+    if (task.fixedDelay !== undefined) {
+        const loop = () => {
+            const timer = setTimeout(async () => {
+                await executeTask(task, instance);
+                loop();
+            }, intervalMs);
+            timers.push(timer);
+        };
+        loop();
+    } else {
+        const timer = setInterval(() => executeTask(task, instance), intervalMs);
+        timers.push(timer);
+    }
+}
+
+function getDateInZone(zone?: string): Date {
+    if (!zone) return new Date();
+    try {
+        const now = new Date();
+        const str = now.toLocaleString("en-US", { timeZone: zone });
+        return new Date(str);
+    } catch {
+        return new Date();
+    }
 }
 
 export function startScheduledTasks(): void {

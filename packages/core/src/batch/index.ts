@@ -16,11 +16,6 @@ export interface ItemWriter<O> {
     close(): Promise<void>;
 }
 
-export interface Chunk<I, O> {
-    items: O[];
-    count: number;
-}
-
 export class ArrayReader<I> implements ItemReader<I> {
     private index = 0;
     constructor(private items: I[]) {}

@@ -58,6 +58,15 @@ async function resolveValue(
             return meta.name ? req.query[meta.name] : req.query;
         case ParamSource.HEADER:
             return meta.name ? req.headers[meta.name.toLowerCase()] : req.headers;
+        case ParamSource.COOKIE: {
+            const raw = Array.isArray(req.headers?.cookie) ? req.headers.cookie.join("; ") : (req.headers?.cookie ?? "");
+            const cookies: Record<string, string> = {};
+            raw.split(";").forEach((pair: string) => {
+                const [k, ...rest] = pair.split("=");
+                if (k) cookies[k.trim()] = rest.join("=").trim();
+            });
+            return meta.name ? cookies[meta.name] : cookies;
+        }
         case ParamSource.CURRENT_USER:
             return (req as AuthenticatedRequest).user;
         case ParamSource.REQ:

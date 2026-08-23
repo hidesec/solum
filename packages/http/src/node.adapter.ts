@@ -1,4 +1,5 @@
 import http, { IncomingMessage, Server, ServerResponse } from "http";
+import crypto from "crypto";
 import { BadRequestException, PayloadTooLargeException, runWithRequestContext } from "@solumjs/core";
 import { HttpAdapter, RouteRegistration } from "./http-adapter";
 import { Router } from "./router";
@@ -231,7 +232,14 @@ export class NodeHttpAdapter implements HttpAdapter {
     }
 
     private async handle(incoming: IncomingMessage, serverRes: ServerResponse): Promise<void> {
-        await runWithRequestContext(() => this.handleRequest(incoming, serverRes));
+        const rawCookie = incoming.headers?.cookie ?? "";
+        const cookies: Record<string, string> = {};
+        rawCookie.split(";").forEach((pair: string) => {
+            const [k, ...rest] = pair.split("=");
+            if (k) cookies[k.trim()] = rest.join("=").trim();
+        });
+        const sessionId = cookies["solum.sid"] || crypto.randomUUID();
+        await runWithRequestContext(() => this.handleRequest(incoming, serverRes), sessionId);
     }
 
     private async handleRequest(incoming: IncomingMessage, serverRes: ServerResponse): Promise<void> {

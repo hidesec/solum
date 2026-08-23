@@ -23,10 +23,6 @@ export function resolvePointcut(nameOrExpression: string): string {
     return nameOrExpression;
 }
 
-export function getNamedPointcut(name: string): string | undefined {
-    return NAMED_POINTCUTS.get(name);
-}
-
 export function parsePointcut(expression: string): ParsedPointcut {
     const resolved = resolvePointcut(expression);
     const trimmed = resolved.trim();

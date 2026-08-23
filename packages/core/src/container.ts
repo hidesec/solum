@@ -85,7 +85,7 @@ let factoryProcessed = false;
 
 const resolutionListeners = new Map<Token, ((token: Token, instance: unknown) => void)[]>();
 
-const requestStorage = new AsyncLocalStorage<{ beans: Map<BeanEntry, unknown> }>();
+const requestStorage = new AsyncLocalStorage<{ beans: Map<BeanEntry, unknown>; sessionId?: string }>();
 
 function activeEntries(token: Token): BeanEntry[] {
     const entries = entriesFor(token);
@@ -286,7 +286,7 @@ function resolveClassBean(token: Token, entry: BeanEntry): unknown {
                 `Session-scoped bean "${String(token)}" accessed outside of an HTTP request.`
             );
         }
-        const sessionId = (store as any).sessionId;
+        const sessionId = store.sessionId;
         if (!sessionId) {
             throw new Error(
                 `Session-scoped bean "${String(token)}" requires an active session. Ensure session middleware is enabled.`
@@ -491,8 +491,8 @@ export function registerBeanFactoryPostProcessor(processor: BeanFactoryPostProce
     beanFactoryPostProcessors.push(processor);
 }
 
-export function runWithRequestContext<T>(fn: () => T): T {
-    return requestStorage.run({ beans: new Map<BeanEntry, unknown>() }, fn);
+export function runWithRequestContext<T>(fn: () => T, sessionId?: string): T {
+    return requestStorage.run({ beans: new Map<BeanEntry, unknown>(), sessionId }, fn);
 }
 
 export function clear(): void {

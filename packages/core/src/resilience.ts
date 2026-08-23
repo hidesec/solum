@@ -23,7 +23,7 @@ export enum CircuitState {
 export class CircuitBreaker {
     private state: CircuitState = CircuitState.CLOSED;
     private failureCount = 0;
-    private successCount = 0;
+
     private lastFailureTime = 0;
     private halfOpenCalls = 0;
 
@@ -57,9 +57,9 @@ export class CircuitBreaker {
         if (this.state === CircuitState.HALF_OPEN) {
             this.state = CircuitState.CLOSED;
             this.failureCount = 0;
-            this.successCount = 0;
+
         } else {
-            this.successCount++;
+
         }
     }
 
@@ -77,7 +77,6 @@ export class CircuitBreaker {
     reset(): void {
         this.state = CircuitState.CLOSED;
         this.failureCount = 0;
-        this.successCount = 0;
     }
 }
 

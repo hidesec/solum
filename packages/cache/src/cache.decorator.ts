@@ -1,5 +1,3 @@
-import { getFrameworkConfig } from "@solumjs/core";
-
 import { Around, JoinPoint } from "@solumjs/aop";
 
 export interface CacheStore {
@@ -129,8 +127,4 @@ export function CachePut(cacheName: string, ttlSeconds: number = 60) {
         await cacheManager.set(key, result, ttlSeconds);
         return result;
     });
-}
-
-export function hasRedisConfigured(): boolean {
-    return getFrameworkConfig().get("REDIS_URL") !== undefined;
 }

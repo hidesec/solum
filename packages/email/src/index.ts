@@ -118,10 +118,6 @@ function base64Encode(str: string): string {
     return Buffer.from(str, "utf8").toString("base64");
 }
 
-function decodeBase64(str: string): string {
-    return Buffer.from(str, "base64").toString("utf8");
-}
-
 function parseSmtpResponse(line: string): { code: number; message: string } {
     const match = line.match(/^(\d{3})\s*(.*)/);
     if (!match) return { code: 0, message: line };
@@ -186,7 +182,7 @@ async function sendMailDirect(config: SmtpConfig, options: EmailOptions): Promis
                     await sendSmtpCommand(tlsSocket, `EHLO solumjs.local\r\n`, 250);
 
                     if (config.auth) {
-                        const startTls = await sendSmtpCommand(tlsSocket, `STARTTLS\r\n`, 220);
+                        await sendSmtpCommand(tlsSocket, `STARTTLS\r\n`, 220);
                         const tlsOpts: tls.ConnectionOptions = {
                             host,
                             rejectUnauthorized: config.tls?.rejectUnauthorized ?? true,
@@ -313,8 +309,4 @@ export class MailService {
     getConfig(): SmtpConfig {
         return { ...this.config };
     }
-}
-
-export function createMailService(config: SmtpConfig): MailService {
-    return new MailService(config);
 }

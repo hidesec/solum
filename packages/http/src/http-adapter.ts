@@ -1,6 +1,7 @@
 import { SolumjsHandler } from "./http-types";
+import { HttpMethod } from "./route.decorator";
 
-export type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
+export { HttpMethod } from "./route.decorator";
 
 export interface RouteRegistration {
     method: HttpMethod;

@@ -6,10 +6,8 @@ import { isInTransaction } from "@solumjs/orm";
 import {
     queueEvent,
     registerEventFlushHook,
-    clearPendingEvents,
 } from "./transaction-event-store";
 import {
-    hasTransactionalListeners,
     getTransactionalListeners,
 } from "./transactional-event-listener";
 

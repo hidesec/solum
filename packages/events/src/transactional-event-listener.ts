@@ -34,7 +34,3 @@ export function getTransactionalListeners(eventType: string): TransactionalListe
 export function hasTransactionalListeners(eventType: string): boolean {
     return transactionalListeners.some((l) => l.eventType === eventType);
 }
-
-export function getTransactionalListenersForTarget(target: Function): TransactionalListenerDefinition[] {
-    return Reflect.getMetadata(TRANSACTIONAL_LISTENERS_KEY, target) || [];
-}

@@ -12,7 +12,7 @@ export function ResponseStatus(statusCode: number) {
     }
 }
 
-export function getResponseStatus(target: Function, handlerName: string, fallback: 200): number {
+export function getResponseStatus(target: Function, handlerName: string, fallback: number = 200): number {
     const map: Record<string, number> = Reflect.getMetadata(RESPONSE_STATUS_METADATA_KEY, target) || {};
     return map[handlerName] ?? fallback;
 }

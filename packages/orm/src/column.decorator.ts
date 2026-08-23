@@ -65,12 +65,6 @@ export interface ManyToManyMetadata {
   inverseJoinColumn?: string;
 }
 
-export interface RelationInfo {
-  propertyName: string;
-  type: "ManyToOne" | "OneToMany" | "OneToOne" | "ManyToMany";
-  targetEntity: () => Function;
-}
-
 export interface EntityMetadata {
   tableName: string;
   schemaName: string;

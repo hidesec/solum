@@ -1,5 +1,3 @@
-import { getFrameworkConfig } from "@solumjs/core";
-
 import { CacheStore } from "./cache.decorator";
 
 type RedisClientV4 = {
@@ -62,8 +60,4 @@ export class RedisCacheStore implements CacheStore {
             await this.client.del(...keys);
         }
     }
-}
-
-export function isRedisEnabled(): boolean {
-    return getFrameworkConfig().get("REDIS_URL") !== undefined;
 }

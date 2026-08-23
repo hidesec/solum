@@ -19,21 +19,6 @@ export interface HealthStatus {
 }
 
 const startTime = Date.now();
-let requestCount = 0;
-let errorCount = 0;
-const responseTimes: number[] = [];
-
-function getAverageResponseTime(): number {
-    if (responseTimes.length === 0) return 0;
-    return responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
-}
-
-function getP99ResponseTime(): number {
-    if (responseTimes.length === 0) return 0;
-    const sorted = [...responseTimes].sort((a, b) => a - b);
-    const p99Index = Math.floor(sorted.length * 0.99);
-    return sorted[p99Index] || 0;
-}
 
 async function defaultDatabaseHealthCheck(): Promise<HealthStatus> {
     try {
@@ -121,15 +106,6 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
         handler: jsonHandler({
             uptime: formatUptime(Date.now() - startTime),
             uptimeMs: Date.now() - startTime,
-            requests: {
-                total: requestCount,
-                errors: errorCount,
-                successRate: requestCount > 0 ? ((requestCount - errorCount) / requestCount * 100).toFixed(2) + "%" : "N/A",
-            },
-            responseTime: {
-                avg: Math.round(getAverageResponseTime() * 100) / 100,
-                p99: Math.round(getP99ResponseTime() * 100) / 100,
-            },
             system: {
                 nodeVersion: process.version,
                 platform: process.platform,

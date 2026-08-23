@@ -4,7 +4,6 @@ import { NodeHttpAdapter } from "@solumjs/http";
 import { mountControllers } from "@solumjs/config";
 import { registerDatabaseDriver } from "@solumjs/orm";
 
-const ACTIVE_PROFILES_KEY = "custom:active-profiles";
 let activeProfiles: string[] = [];
 
 export function SetActiveProfiles(...profiles: string[]): void {

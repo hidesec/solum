@@ -33,5 +33,3 @@ export function registerEventFlushHook(flushFn: (events: QueuedEvent[]) => Promi
         },
     });
 }
-
-export { isInTransaction };

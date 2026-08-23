@@ -6,8 +6,30 @@ export interface ParsedPointcut {
     argsPattern: string;
 }
 
+const NAMED_POINTCUTS = new Map<string, string>();
+
+export function Pointcut(name: string, expression: string): MethodDecorator {
+    return function (target: object, _propertyKey: string | symbol) {
+        parsePointcut(expression);
+        NAMED_POINTCUTS.set(name, expression);
+        Reflect.defineMetadata("custom:pointcut-named", expression, target.constructor ?? target, name);
+    };
+}
+
+export function resolvePointcut(nameOrExpression: string): string {
+    if (NAMED_POINTCUTS.has(nameOrExpression)) {
+        return NAMED_POINTCUTS.get(nameOrExpression)!;
+    }
+    return nameOrExpression;
+}
+
+export function getNamedPointcut(name: string): string | undefined {
+    return NAMED_POINTCUTS.get(name);
+}
+
 export function parsePointcut(expression: string): ParsedPointcut {
-    const trimmed = expression.trim();
+    const resolved = resolvePointcut(expression);
+    const trimmed = resolved.trim();
     if (trimmed.length === 0) {
         throw new Error("Pointcut expression must not be empty.");
     }

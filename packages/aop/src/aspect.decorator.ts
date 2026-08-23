@@ -1,6 +1,6 @@
 import "@solumjs/core";
 import { container } from "@solumjs/core";
-import { parsePointcut, ParsedPointcut } from "./pointcut";
+import { parsePointcut, ParsedPointcut, resolvePointcut } from "./pointcut";
 import {
     ADVICE_METADATA_KEY,
     ASPECT_MARKER_KEY,

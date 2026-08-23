@@ -13,3 +13,8 @@ export * from "./bean-meta.decorators";
 export * from "./resilience";
 export * from "./metrics";
 export * from "./tracing";
+export * from "./i18n/message-source";
+export * from "./batch";
+export * from "./discovery";
+export * from "./config-server";
+export * from "./event-sourcing";

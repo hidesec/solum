@@ -1,8 +1,9 @@
-import { getValidationRules, ValidationRule } from "./decorators";
+import { getValidationRules, getCascadeTargets, ValidationRule } from "./decorators";
 
 export interface ValidationError {
     property: string;
     constraints: Record<string, string>;
+    children?: ValidationError[];
 }
 
 export interface ValidateOptions {
@@ -39,6 +40,7 @@ export function validateInstance(
 ): ValidationError[] {
     const errors: ValidationError[] = [];
     const rules = getValidationRules(instance.constructor as Function);
+    const cascadeTargets = getCascadeTargets(instance.constructor as Function);
     const ownKeys = new Set(Object.keys(instance));
 
     if (options.whitelist || options.forbidNonWhitelisted) {
@@ -76,6 +78,47 @@ export function validateInstance(
                     existing.constraints[rule.name] = rule.message(property);
                 } else {
                     errors.push({ property, constraints: constraint });
+                }
+            }
+        }
+    }
+
+    for (const [property, cascadeConfig] of cascadeTargets.entries()) {
+        const value = (instance as Record<string, unknown>)[property];
+        if (value === null || value === undefined) continue;
+
+        const childOptions: ValidateOptions = {
+            ...options,
+            groups: cascadeConfig.groups ?? options.groups,
+        };
+
+        if (Array.isArray(value)) {
+            const children: ValidationError[] = [];
+            for (let i = 0; i < value.length; i++) {
+                const item = value[i];
+                if (item !== null && typeof item === "object" && typeof (item as any).validate === "undefined") {
+                    const childErrors = validateInstance(item, childOptions);
+                    if (childErrors.length > 0) {
+                        children.push({ property: `[${i}]`, constraints: {}, children: childErrors });
+                    }
+                }
+            }
+            if (children.length > 0) {
+                const existing = errors.find((e) => e.property === property);
+                if (existing) {
+                    existing.children = children;
+                } else {
+                    errors.push({ property, constraints: {}, children });
+                }
+            }
+        } else if (typeof value === "object" && typeof (value as any).validate === "undefined") {
+            const childErrors = validateInstance(value, childOptions);
+            if (childErrors.length > 0) {
+                const existing = errors.find((e) => e.property === property);
+                if (existing) {
+                    existing.children = childErrors;
+                } else {
+                    errors.push({ property, constraints: {}, children: childErrors });
                 }
             }
         }

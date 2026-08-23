@@ -4,6 +4,85 @@ import { NodeHttpAdapter } from "@solumjs/http";
 import { mountControllers } from "@solumjs/config";
 import { registerDatabaseDriver } from "@solumjs/orm";
 
+const ACTIVE_PROFILES_KEY = "custom:active-profiles";
+let activeProfiles: string[] = [];
+
+export function SetActiveProfiles(...profiles: string[]): void {
+    activeProfiles = profiles;
+    process.env.SOLUM_PROFILE = profiles[0] || "test";
+}
+
+export function GetActiveProfiles(): string[] {
+    return activeProfiles;
+}
+
+export function ClearActiveProfiles(): void {
+    activeProfiles = [];
+    delete process.env.SOLUM_PROFILE;
+}
+
+const MOCK_BEANS_KEY = "custom:mock-beans";
+const mockBeans: Map<string, unknown> = new Map();
+
+export function MockBean(token: string | Function): PropertyDecorator {
+    return (target, propertyKey) => {
+        const existing: Array<{ token: string | Function; propertyKey: string | symbol }> =
+            Reflect.getOwnMetadata(MOCK_BEANS_KEY, target.constructor) || [];
+        existing.push({ token, propertyKey });
+        Reflect.defineMetadata(MOCK_BEANS_KEY, existing, target.constructor);
+    };
+}
+
+export function getMockBeans(target: Function): Array<{ token: string | Function; propertyKey: string | symbol }> {
+    return Reflect.getOwnMetadata(MOCK_BEANS_KEY, target) || [];
+}
+
+export function applyMockBeans(instance: any): void {
+    const declarations = getMockBeans(instance.constructor);
+    for (const { token, propertyKey } of declarations) {
+        const mockValue = mockBeans.get(typeof token === "string" ? token : token.name);
+        if (mockValue !== undefined) {
+            (instance as any)[propertyKey] = mockValue;
+        } else {
+            const placeholder = createPlaceholderMock(token);
+            mockBeans.set(typeof token === "string" ? token : token.name, placeholder);
+            (instance as any)[propertyKey] = placeholder;
+        }
+    }
+}
+
+function createPlaceholderMock(token: string | Function): any {
+    const name = typeof token === "string" ? token : token.name;
+    return new Proxy(
+        {},
+        {
+            get(_target, prop) {
+                if (prop === Symbol.toPrimitive) return () => `[MockBean: ${name}]`;
+                if (prop === "then") return undefined;
+                return (...args: any[]) => {
+                    throw new Error(`MockBean ${name}.${String(prop)} called but not configured. Use mockBean() to set implementation.`);
+                };
+            },
+        }
+    );
+}
+
+export function setupMockBeans(classes: Function[]): void {
+    for (const cls of classes) {
+        const declarations = getMockBeans(cls);
+        for (const { token, propertyKey } of declarations) {
+            const tokenName = typeof token === "string" ? token : token.name;
+            if (!mockBeans.has(tokenName)) {
+                mockBeans.set(tokenName, createPlaceholderMock(token));
+            }
+        }
+    }
+}
+
+export function clearMockBeans(): void {
+    mockBeans.clear();
+}
+
 export interface TestApplication {
     server: http.Server;
     port: number;

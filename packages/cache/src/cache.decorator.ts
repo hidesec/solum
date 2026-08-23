@@ -122,6 +122,15 @@ export function CacheEvict(cacheName: string) {
     });
 }
 
+export function CachePut(cacheName: string, ttlSeconds: number = 60) {
+    return Around(async (joinPoint, proceed) => {
+        const result = await proceed();
+        const key = buildCacheKey(cacheName, joinPoint);
+        await cacheManager.set(key, result, ttlSeconds);
+        return result;
+    });
+}
+
 export function hasRedisConfigured(): boolean {
     return getFrameworkConfig().get("REDIS_URL") !== undefined;
 }

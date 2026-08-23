@@ -248,3 +248,71 @@ export function IsUUID(options?: RuleOptions): PropertyDecorator {
         });
     };
 }
+
+export function NotNull(options?: RuleOptions): PropertyDecorator {
+    return (target, propertyKey) => {
+        addRule(target, propertyKey as string, {
+            name: "notNull",
+            validate: (value) => value !== null && value !== undefined,
+            message: (p) => `${p} must not be null`,
+            groups: options?.groups,
+        });
+    };
+}
+
+export function IsPositive(options?: RuleOptions): PropertyDecorator {
+    return (target, propertyKey) => {
+        addRule(target, propertyKey as string, {
+            name: "isPositive",
+            validate: (value) => typeof value === "number" && value > 0,
+            message: (p) => `${p} must be a positive number`,
+            groups: options?.groups,
+        });
+    };
+}
+
+export function IsNegative(options?: RuleOptions): PropertyDecorator {
+    return (target, propertyKey) => {
+        addRule(target, propertyKey as string, {
+            name: "isNegative",
+            validate: (value) => typeof value === "number" && value < 0,
+            message: (p) => `${p} must be a negative number`,
+            groups: options?.groups,
+        });
+    };
+}
+
+const URL_PATTERN = /^https?:\/\/.+/;
+export function IsUrl(options?: RuleOptions): PropertyDecorator {
+    return (target, propertyKey) => {
+        addRule(target, propertyKey as string, {
+            name: "isUrl",
+            validate: (value) => typeof value === "string" && URL_PATTERN.test(value),
+            message: (p) => `${p} must be a valid URL`,
+            groups: options?.groups,
+        });
+    };
+}
+
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/;
+export function IsDateString(options?: RuleOptions): PropertyDecorator {
+    return (target, propertyKey) => {
+        addRule(target, propertyKey as string, {
+            name: "isDateString",
+            validate: (value) => typeof value === "string" && ISO_DATE_PATTERN.test(value) && !isNaN(Date.parse(value)),
+            message: (p) => `${p} must be a valid ISO date string`,
+            groups: options?.groups,
+        });
+    };
+}
+
+const VALID_METADATA_KEY = "custom:validation-cascade";
+export function Valid(options?: RuleOptions): PropertyDecorator {
+    return (target, propertyKey) => {
+        Reflect.defineMetadata(VALID_METADATA_KEY, { groups: options?.groups }, target.constructor ?? target, propertyKey as string);
+    };
+}
+
+export function getCascadeTargets(target: Function): Map<string, { groups?: string[] }> {
+    return (Reflect.getOwnMetadata(VALID_METADATA_KEY, target) as Map<string, { groups?: string[] }>) ?? new Map();
+}

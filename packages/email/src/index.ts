@@ -298,6 +298,8 @@ export function clearSentEmails(): void {
     lastSentEmail = null;
 }
 
+const MAX_EMAIL_SIZE_BYTES = 10 * 1024 * 1024;
+
 export class MailService {
     private config: SmtpConfig;
 
@@ -306,6 +308,12 @@ export class MailService {
     }
 
     async send(options: EmailOptions): Promise<void> {
+        const estimatedSize = Buffer.byteLength(options.html || options.text || "", "utf8")
+            + (options.subject ? Buffer.byteLength(options.subject, "utf8") : 0)
+            + (options.attachments?.reduce((sum, a) => sum + (a.content ? Buffer.byteLength(a.content, "utf8") : 0), 0) ?? 0);
+        if (estimatedSize > MAX_EMAIL_SIZE_BYTES) {
+            throw new Error(`Email size (${estimatedSize} bytes) exceeds maximum allowed (${MAX_EMAIL_SIZE_BYTES} bytes)`);
+        }
         if (testMode) {
             emails.push(options);
             lastSentEmail = options;

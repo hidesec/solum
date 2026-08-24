@@ -17,6 +17,11 @@ interface MemoryEntry {
 export class InMemoryCacheStore implements CacheStore {
     readonly name = "in-memory";
     private readonly entries = new Map<string, MemoryEntry>();
+    private readonly maxEntries: number;
+
+    constructor(maxEntries: number = 10000) {
+        this.maxEntries = maxEntries;
+    }
 
     async get<T>(key: string): Promise<T | undefined> {
         const entry = this.entries.get(key);
@@ -31,7 +36,23 @@ export class InMemoryCacheStore implements CacheStore {
     }
 
     async set(key: string, value: unknown, ttlSeconds: number): Promise<void> {
+        if (this.entries.size >= this.maxEntries) {
+            this.evictExpired();
+            if (this.entries.size >= this.maxEntries) {
+                const firstKey = this.entries.keys().next().value;
+                if (firstKey !== undefined) this.entries.delete(firstKey);
+            }
+        }
         this.entries.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
+    }
+
+    private evictExpired(): void {
+        const now = Date.now();
+        for (const [key, entry] of this.entries) {
+            if (entry.expiresAt <= now) {
+                this.entries.delete(key);
+            }
+        }
     }
 
     async evict(prefix: string): Promise<void> {

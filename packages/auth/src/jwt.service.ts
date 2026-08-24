@@ -22,12 +22,19 @@ function getJwtSecret(): string {
     return secret;
 }
 
-const revokedJtis = new Set<string>();
+const revokedJtis = new Map<string, number>();
+
+const REVOKED_TOKEN_TTL_MS = 60 * 60 * 1000;
 
 function cleanupRevokedTokens(): void {
-    revokedJtis.clear();
+    const now = Date.now();
+    for (const [jti, expiresAt] of revokedJtis) {
+        if (expiresAt <= now) {
+            revokedJtis.delete(jti);
+        }
+    }
 }
-setInterval(cleanupRevokedTokens, 60 * 60 * 1000);
+setInterval(cleanupRevokedTokens, 10 * 60 * 1000);
 
 @Bean("IJwtService")
 export class JwtService implements IJwtService {
@@ -47,12 +54,19 @@ export class JwtService implements IJwtService {
     revoke(token: string): void {
         const payload = verifyJwt<JwtPayload>(token, getJwtSecret());
         if (payload?.jti) {
-            revokedJtis.add(payload.jti);
+            const ttlMs = payload.exp ? (payload.exp * 1000 - Date.now()) : REVOKED_TOKEN_TTL_MS;
+            revokedJtis.set(payload.jti, Date.now() + Math.max(ttlMs, REVOKED_TOKEN_TTL_MS));
         }
     }
 
     isRevoked(jti: string): boolean {
-        return revokedJtis.has(jti);
+        const expiresAt = revokedJtis.get(jti);
+        if (expiresAt === undefined) return false;
+        if (expiresAt <= Date.now()) {
+            revokedJtis.delete(jti);
+            return false;
+        }
+        return true;
     }
 
     private sign(claims: TokenClaims, type: TokenType, expiresInSeconds: number): string {

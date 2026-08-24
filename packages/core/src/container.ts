@@ -77,7 +77,19 @@ type BeanFactoryPostProcessor = (registry: BeanDefinitionRegistry) => void;
 const definitions = new Map<Token, BeanEntry[]>();
 const inCreation = new Set<Token>();
 const pendingProxies = new Map<Token, DeferredRef[]>();
-const sessionBeans = new Map<string, unknown>();
+const sessionBeans = new Map<string, { instance: unknown; expiresAt: number }>();
+
+const SESSION_BEAN_TTL_MS = 30 * 60 * 1000;
+
+function sweepSessionBeans(): void {
+    const now = Date.now();
+    for (const [key, entry] of sessionBeans) {
+        if (entry.expiresAt <= now) {
+            sessionBeans.delete(key);
+        }
+    }
+}
+setInterval(sweepSessionBeans, 5 * 60 * 1000).unref();
 
 const beanPostProcessors: BeanPostProcessor[] = [];
 let beanFactoryPostProcessors: BeanFactoryPostProcessor[] = [];
@@ -294,9 +306,9 @@ function resolveClassBean(token: Token, entry: BeanEntry): unknown {
         }
         const sessionKey = `session:${sessionId}:${String(token)}`;
         const cached = sessionBeans.get(sessionKey);
-        if (cached !== undefined) return cached;
+        if (cached !== undefined && cached.expiresAt > Date.now()) return cached.instance;
         const instance = instantiate(entry, token);
-        sessionBeans.set(sessionKey, instance);
+        sessionBeans.set(sessionKey, { instance, expiresAt: Date.now() + SESSION_BEAN_TTL_MS });
         return instance;
     }
 

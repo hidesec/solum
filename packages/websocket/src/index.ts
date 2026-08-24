@@ -169,6 +169,8 @@ export interface WebSocketOptions {
     authToken?: string;
 }
 
+const WS_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+
 export function mountWebSocket(server: http.Server, handlers: Map<string, WsHandler>, options: WebSocketOptions = {}): void {
     server.on("upgrade", (req, socket, head) => {
         if (!validateOrigin(req)) {
@@ -205,6 +207,12 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
 
         acceptWebSocket(req, socket as net.Socket);
 
+        const socketRef = socket as net.Socket;
+        socketRef.setTimeout(WS_IDLE_TIMEOUT_MS);
+        socketRef.on("timeout", () => {
+            socketRef.destroy();
+        });
+
         const clientId = crypto.randomUUID();
         const client = createWsClient(clientId, socket as net.Socket);
 
@@ -231,6 +239,14 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
                     for (const handler of (socket as any).__wsCloseHandlers) {
                         handler();
                     }
+                    socket.destroy();
+                    return;
+                } else if (frame.opcode === 0x9) {
+                    const pong = Buffer.alloc(2);
+                    pong[0] = 0x8a;
+                    pong[1] = 0x00;
+                    socket.write(pong);
+                } else {
                     socket.destroy();
                     return;
                 }
@@ -359,6 +375,10 @@ export function createStompHandler(instance: any): WsHandler {
                         const destination = frame.headers["destination"];
                         const id = frame.headers["id"] || destination;
                         if (destination) {
+                            if (destination.startsWith("/internal/") || destination.startsWith("/system/")) {
+                                client.send(serializeStompFrame("ERROR", { message: "Access denied to internal destination" }));
+                                break;
+                            }
                             if (!STOMP_SUBSCRIPTIONS.has(destination)) {
                                 STOMP_SUBSCRIPTIONS.set(destination, new Set());
                             }

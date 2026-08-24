@@ -218,6 +218,7 @@ export function mockBean<T>(token: string | (new (...args: any[]) => T), impleme
 
 export function resetContainer(): void {
     container.clear();
+    mockBeans.clear();
 }
 
 export class MockLogger {

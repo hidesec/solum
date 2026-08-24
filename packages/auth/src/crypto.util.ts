@@ -19,7 +19,10 @@ export function signJwt(payload: Record<string, unknown>, secret: string, expire
     return `${data}.${signature}`;
 }
 
+const MAX_JWT_LENGTH = 8192;
+
 export function verifyJwt<T extends object>(token: string, secret: string, options?: JwtVerifyOptions): T | null {
+    if (token.length > MAX_JWT_LENGTH) return null;
     const parts = token.split(".");
     if (parts.length !== 3) return null;
 

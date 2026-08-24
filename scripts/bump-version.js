@@ -78,13 +78,14 @@ if (fs.existsSync(metaPath)) {
         if (meta.dependencies) {
             for (const [dep, ver] of Object.entries(meta.dependencies)) {
                 if (dep.startsWith("@solumjs/") && ver.startsWith("^")) {
-                    meta.dependencies[dep] = `^${newVersion}`;
+                    // Read actual version from the package's own package.json
+                    const pkgName = dep.replace("@solumjs/", "");
+                    const depPkgPath = path.join(packagesDir, pkgName, "package.json");
+                    if (fs.existsSync(depPkgPath)) {
+                        const depPkg = JSON.parse(fs.readFileSync(depPkgPath, "utf8"));
+                        meta.dependencies[dep] = `^${depPkg.version}`;
+                    }
                 }
-            }
-            // CLI has its own version
-            if (meta.dependencies["@solumjs/cli"]) {
-                const cliPkg = JSON.parse(fs.readFileSync(path.join(packagesDir, "cli", "package.json"), "utf8"));
-                meta.dependencies["@solumjs/cli"] = `^${cliPkg.version}`;
             }
         }
         fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2) + "\n");

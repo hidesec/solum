@@ -29,12 +29,6 @@ export function ApiProperty(options: ApiPropertyOptions = {}) {
     };
 }
 
-export function getApiPropertyOptions(target: Function, property: string): ApiPropertyOptions | undefined {
-    const map: Map<string, ApiPropertyOptions> | undefined =
-        Reflect.getMetadata(API_PROPERTY_METADATA, target) ?? undefined;
-    return map?.get(property);
-}
-
 export function getAllApiPropertyOptions(target: Function): Map<string, ApiPropertyOptions> {
     return Reflect.getMetadata(API_PROPERTY_METADATA, target) ?? new Map();
 }

@@ -1,6 +1,6 @@
 {
   "name": "backend-example",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/app.ts",
@@ -15,20 +15,20 @@
     "schema:sync:update": "ts-node -r tsconfig-paths/register src/database/sync-schema.ts update"
   },
   "dependencies": {
-    "@solumjs/auth": "^0.1.0",
-    "@solumjs/cache": "^0.1.0",
-    "@solumjs/config": "^0.1.0",
-    "@solumjs/core": "^0.1.0",
-    "@solumjs/database": "^0.1.0",
-    "@solumjs/events": "^0.1.0",
-    "@solumjs/http": "^0.1.0",
-    "@solumjs/middlewares": "^0.1.0",
-    "@solumjs/orm": "^0.1.0",
-    "@solumjs/schedule": "^0.1.0",
-    "@solumjs/validation": "^0.1.0",
-    "@solumjs/websocket": "^0.1.0",
-    "pg": "^8.23.0",
-    "@solumjs/aop": "^0.1.0"
+    "@solumjs/aop": "^0.2.0",
+    "@solumjs/auth": "^0.2.0",
+    "@solumjs/cache": "^0.2.0",
+    "@solumjs/config": "^0.2.0",
+    "@solumjs/core": "^0.2.0",
+    "@solumjs/database": "^0.2.0",
+    "@solumjs/events": "^0.2.0",
+    "@solumjs/http": "^0.2.0",
+    "@solumjs/middlewares": "^0.2.0",
+    "@solumjs/orm": "^0.2.0",
+    "@solumjs/schedule": "^0.2.0",
+    "@solumjs/validation": "^0.2.0",
+    "@solumjs/websocket": "^0.2.0",
+    "pg": "^8.23.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

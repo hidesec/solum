@@ -1,6 +1,8 @@
+import { normalizePath } from "./normalize";
+
 export function matchPathPattern(pattern: string, path: string): boolean {
-    const normalizedPattern = normalizeForMatch(pattern);
-    const normalizedPath = normalizeForMatch(path);
+    const normalizedPattern = normalizePath(pattern);
+    const normalizedPath = normalizePath(path);
 
     if (normalizedPattern === "/**") return true;
 
@@ -8,11 +10,6 @@ export function matchPathPattern(pattern: string, path: string): boolean {
     const pathSegments = normalizedPath.split("/").filter(Boolean);
 
     return matchSegments(patternSegments, 0, pathSegments, 0);
-}
-
-function normalizeForMatch(p: string): string {
-    const cleaned = p.replace(/\/{2,}/g, "/");
-    return cleaned.length > 1 && cleaned.endsWith("/") ? cleaned.slice(0, -1) : cleaned;
 }
 
 function matchSegments(pattern: string[], pi: number, actual: string[], ai: number): boolean {

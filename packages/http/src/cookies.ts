@@ -42,9 +42,3 @@ export function serializeSetCookie(name: string, value: string, options: CookieO
     parts.push(`SameSite=${options.sameSite ?? "Lax"}`);
     return parts.join("; ");
 }
-
-export function rotateSessionId(res: SolumjsResponse, options?: CookieOptions): string {
-    const newId = crypto.randomUUID();
-    res.setCookie("solum.sid", newId, { sameSite: "Lax", ...options });
-    return newId;
-}

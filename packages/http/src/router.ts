@@ -1,5 +1,6 @@
 import { HttpMethod, RouteRegistration } from "./http-adapter";
 import { SolumjsHandler } from "./http-types";
+import { normalizePath } from "./normalize";
 
 export interface RouteMatch {
     handler: SolumjsHandler;
@@ -12,11 +13,6 @@ interface RouteEntry {
     segments: string[];
     handler: SolumjsHandler;
     patternPath: string;
-}
-
-function normalize(path: string): string {
-    const cleaned = path.replace(/\/{2,}/g, "/");
-    return cleaned.length > 1 && cleaned.endsWith("/") ? cleaned.slice(0, -1) : cleaned;
 }
 
 function matchSegments(pattern: string[], actual: string[]): Record<string, string> | null {
@@ -37,7 +33,7 @@ export class Router {
     private readonly routes: RouteEntry[] = [];
 
     add(method: HttpMethod, prefix: string, path: string, handler: SolumjsHandler): void {
-        const pattern = normalize(`${prefix}/${path}`);
+        const pattern = normalizePath(`${prefix}/${path}`);
         this.routes.push({
             method: method.toUpperCase(),
             segments: pattern.split("/").filter(Boolean),
@@ -51,7 +47,7 @@ export class Router {
     }
 
     match(method: string, path: string): RouteMatch | undefined {
-        const parts = normalize(path).split("/").filter(Boolean);
+        const parts = normalizePath(path).split("/").filter(Boolean);
         for (const route of this.routes) {
             if (route.method !== method.toUpperCase()) continue;
             const params = matchSegments(route.segments, parts);

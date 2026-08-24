@@ -1,6 +1,7 @@
 import { createReadStream, existsSync, lstatSync, statSync } from "fs";
 import path from "path";
 import { SolumjsMiddleware } from "./http-types";
+import { normalizePath } from "./normalize";
 
 const CONTENT_TYPES: Record<string, string> = {
     ".html": "text/html; charset=utf-8",
@@ -126,7 +127,3 @@ export function serveStatic(rootDir: string, options: StaticOptions = {}): Solum
     };
 }
 
-function normalizePath(p: string): string {
-    const cleaned = p.replace(/\/{2,}/g, "/");
-    return cleaned.length > 1 && cleaned.endsWith("/") ? cleaned.slice(0, -1) : cleaned || "/";
-}

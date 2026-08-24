@@ -9,6 +9,7 @@ export * from "./multipart";
 export * from "./static";
 export * from "./session";
 export * from "./redis-session";
+export * from "./normalize";
 export {
     HttpClient,
     HttpGet,

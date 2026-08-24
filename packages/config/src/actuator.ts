@@ -27,12 +27,6 @@ export interface CustomEndpoint {
     handler: (req: any, res: any) => void | Promise<void>;
 }
 
-const customEndpoints: CustomEndpoint[] = [];
-
-export function registerCustomEndpoint(endpoint: CustomEndpoint): void {
-    customEndpoints.push(endpoint);
-}
-
 const startTime = Date.now();
 
 async function defaultDatabaseHealthCheck(): Promise<HealthStatus> {
@@ -154,7 +148,7 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
         handler: jsonHandler({
             app: {
                 name: process.env.SOLUM_APP_NAME || "SolumJS Application",
-                version: process.env.SOLUM_APP_VERSION || "0.1.0",
+                version: process.env.SOLUM_APP_VERSION || "0.2.0",
                 environment: process.env.SOLUM_PROFILE || process.env.NODE_ENV || "development",
             },
             build: {
@@ -236,7 +230,7 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
         }),
     });
 
-    const allCustomEndpoints = [...customEndpoints, ...(options.customEndpoints || [])];
+    const allCustomEndpoints = options.customEndpoints || [];
     for (const endpoint of allCustomEndpoints) {
         adapter.registerRoute(basePath, {
             method: endpoint.method || "get",

@@ -17,6 +17,7 @@ SolumJS is a full-stack backend framework that brings the simplicity and convent
 - [Quick Install](#quick-install)
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
+- [Migration Guide](docs/migration-guide.md)
 - [Packages](#packages)
 - [Core Concepts](#core-concepts)
   - [Dependency Injection](#dependency-injection)

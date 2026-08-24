@@ -1,0 +1,57 @@
+{
+  "name": "solumjs",
+  "version": "0.1.1",
+  "description": "SolumJS: A modular, decorator-driven backend framework for Node.js and TypeScript (installs all packages)",
+  "license": "MIT",
+  "bin": {
+    "solum": "bin/solum"
+  },
+  "files": [
+    "bin"
+  ],
+  "scripts": {
+    "postinstall": "echo '\n  SolumJS installed! Run \"solum new my-app\" to create a project.\n'"
+  },
+  "dependencies": {
+    "@solumjs/core": "^0.1.0",
+    "@solumjs/http": "^0.1.0",
+    "@solumjs/aop": "^0.1.0",
+    "@solumjs/orm": "^0.1.0",
+    "@solumjs/database": "^0.1.0",
+    "@solumjs/cache": "^0.1.0",
+    "@solumjs/auth": "^0.1.0",
+    "@solumjs/events": "^0.1.0",
+    "@solumjs/schedule": "^0.1.0",
+    "@solumjs/config": "^0.1.0",
+    "@solumjs/validation": "^0.1.0",
+    "@solumjs/middlewares": "^0.1.0",
+    "@solumjs/testing": "^0.1.0",
+    "@solumjs/websocket": "^0.1.0",
+    "@solumjs/email": "^0.1.0",
+    "@solumjs/cli": "^0.1.1"
+  },
+  "keywords": [
+    "solumjs",
+    "solum",
+    "backend",
+    "framework",
+    "typescript",
+    "nodejs",
+    "spring-boot",
+    "decorator",
+    "di",
+    "orm",
+    "rest-api",
+    "jwt",
+    "websocket"
+  ],
+  "homepage": "https://github.com/hidesec/backend-example#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hidesec/backend-example.git",
+    "directory": "packages/solumjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -110,13 +110,18 @@ SolumJS is a full-stack backend framework that brings the simplicity and convent
 ## Quick Install
 
 ```bash
-# Quick start with CLI
-npx @solumjs/cli new my-app
+# Install everything at once
+npm install solumjs
 
-# Or install individually
+# Then create a project
+npx solum new my-app
+cd my-app
+npm run dev
+```
+
+**Or install individually:**
+```bash
 npm install @solumjs/core @solumjs/http @solumjs/config @solumjs/orm @solumjs/database
-
-# Add optional packages
 npm install @solumjs/auth @solumjs/cache @solumjs/events @solumjs/schedule
 npm install @solumjs/validation @solumjs/middlewares @solumjs/aop @solumjs/testing
 npm install @solumjs/websocket @solumjs/email
@@ -126,6 +131,7 @@ npm install @solumjs/websocket @solumjs/email
 
 | Package | Install | Description |
 |---------|---------|-------------|
+| `solumjs` | `npm i solumjs` | Install all packages + CLI |
 | `@solumjs/core` | `npm i @solumjs/core` | DI container, decorators, HTTP exceptions |
 | `@solumjs/http` | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors |
 | `@solumjs/aop` | `npm i @solumjs/aop` | Aspect-Oriented Programming |
@@ -198,9 +204,9 @@ npm install @solumjs/websocket @solumjs/email
 ### Quick Start (New Project)
 
 ```bash
-npx @solumjs/cli new my-app
+npm install solumjs
+npx solum new my-app
 cd my-app
-npm install
 npm run dev
 ```
 

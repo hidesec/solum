@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+const { run } = require("@solumjs/cli/dist/index");
+const args = process.argv.slice(2);
+run(args);

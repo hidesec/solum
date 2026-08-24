@@ -125,6 +125,7 @@ function createWsClient(id: string, socket: net.Socket): WsClient {
 
 const MAX_WS_FRAME_SIZE = 1024 * 1024;
 const MAX_STOMP_FRAME_SIZE = 256 * 1024;
+const MAX_STOMP_DESTINATIONS = 1000;
 
 function parseFrame(buffer: Buffer): { opcode: number; payload: Buffer; length: number } | null {
     if (buffer.length < 2) return null;
@@ -170,6 +171,18 @@ export interface WebSocketOptions {
 }
 
 const WS_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const MAX_WS_CONNECTIONS = 1000;
+const MAX_WS_BUFFER_SIZE = 256 * 1024;
+let wsConnectionCount = 0;
+
+function timingSafeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return result === 0;
+}
 
 export function mountWebSocket(server: http.Server, handlers: Map<string, WsHandler>, options: WebSocketOptions = {}): void {
     server.on("upgrade", (req, socket, head) => {
@@ -178,10 +191,16 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
             return;
         }
 
+        if (wsConnectionCount >= MAX_WS_CONNECTIONS) {
+            socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
+            socket.destroy();
+            return;
+        }
+
         if (options.authToken) {
             const url = new URL(req.url || "/", `http://${req.headers.host}`);
             const token = url.searchParams.get("token") ?? req.headers.authorization?.replace("Bearer ", "");
-            if (token !== options.authToken) {
+            if (!token || !timingSafeEqual(token, options.authToken)) {
                 socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
                 socket.destroy();
                 return;
@@ -206,6 +225,7 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
         }
 
         acceptWebSocket(req, socket as net.Socket);
+        wsConnectionCount++;
 
         const socketRef = socket as net.Socket;
         socketRef.setTimeout(WS_IDLE_TIMEOUT_MS);
@@ -220,6 +240,10 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
 
         socket.on("data", (chunk: Buffer) => {
             buffer = Buffer.concat([buffer, chunk]);
+            if (buffer.length > MAX_WS_BUFFER_SIZE) {
+                socket.destroy();
+                return;
+            }
 
             while (buffer.length > 0) {
                 const frame = parseFrame(buffer);
@@ -254,6 +278,7 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
         });
 
         socket.on("close", () => {
+            wsConnectionCount = Math.max(0, wsConnectionCount - 1);
             for (const handler of (socket as any).__wsCloseHandlers) {
                 handler();
             }
@@ -344,12 +369,11 @@ function sanitizeStompBody(body: string): string {
 
 function validateOrigin(req: http.IncomingMessage): boolean {
     const origin = req.headers.origin;
-    if (!origin) return true;
+    if (!origin) return false;
     try {
         const originUrl = new URL(origin);
         const host = req.headers.host;
         if (host && originUrl.host === host) return true;
-        if (process.env.NODE_ENV === "development") return true;
         return false;
     } catch {
         return false;
@@ -371,7 +395,7 @@ export function createStompHandler(instance: any): WsHandler {
                         client.send(serializeStompFrame("CONNECTED", { version: "1.2" }));
                         break;
 
-                    case "SUBSCRIBE": {
+case "SUBSCRIBE": {
                         const destination = frame.headers["destination"];
                         const id = frame.headers["id"] || destination;
                         if (destination) {
@@ -380,9 +404,19 @@ export function createStompHandler(instance: any): WsHandler {
                                 break;
                             }
                             if (!STOMP_SUBSCRIPTIONS.has(destination)) {
+                                if (STOMP_SUBSCRIPTIONS.size >= MAX_STOMP_DESTINATIONS) {
+                                    client.send(serializeStompFrame("ERROR", { message: "Too many destinations" }));
+                                    break;
+                                }
                                 STOMP_SUBSCRIPTIONS.set(destination, new Set());
                             }
-                            STOMP_SUBSCRIPTIONS.get(destination)!.add(client);
+                            const destSubs = STOMP_SUBSCRIPTIONS.get(destination)!;
+                            const clientSubCount = [...STOMP_SUBSCRIPTIONS.values()].filter(s => s.has(client)).length;
+                            if (clientSubCount >= 100) {
+                                client.send(serializeStompFrame("ERROR", { message: "Too many subscriptions" }));
+                                break;
+                            }
+                            destSubs.add(client);
                             client.send(serializeStompFrame("RECEIPT", { "receipt-id": id }));
                         }
                         break;
@@ -391,7 +425,13 @@ export function createStompHandler(instance: any): WsHandler {
                     case "UNSUBSCRIBE": {
                         const dest = frame.headers["destination"];
                         if (dest) {
-                            STOMP_SUBSCRIPTIONS.get(dest)?.delete(client);
+                            const subs = STOMP_SUBSCRIPTIONS.get(dest);
+                            if (subs) {
+                                subs.delete(client);
+                                if (subs.size === 0) {
+                                    STOMP_SUBSCRIPTIONS.delete(dest);
+                                }
+                            }
                         }
                         break;
                     }
@@ -430,8 +470,11 @@ export function createStompHandler(instance: any): WsHandler {
             });
 
             client.onClose(() => {
-                for (const subscribers of STOMP_SUBSCRIPTIONS.values()) {
+                for (const [dest, subscribers] of STOMP_SUBSCRIPTIONS) {
                     subscribers.delete(client);
+                    if (subscribers.size === 0) {
+                        STOMP_SUBSCRIPTIONS.delete(dest);
+                    }
                 }
             });
         },

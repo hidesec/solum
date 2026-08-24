@@ -31,9 +31,8 @@ export function createOAuth2Routes(options: OAuth2GuardOptions): OAuth2RouteHand
                     return;
                 }
 
-                const stateData = provider.consumeState(state);
-                if (!stateData) {
-                    res.status(400).json({ error: "Invalid or expired state parameter" });
+                if (!provider.validateState(state)) {
+                    res.status(400).json({ error: "Invalid state parameter" });
                     return;
                 }
 

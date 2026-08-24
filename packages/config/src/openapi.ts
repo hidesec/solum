@@ -262,7 +262,7 @@ function renderSwaggerHtml(specUrl: string, title: string): string {
   <div id="swagger-ui"></div>
   <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" integrity="sha384-placeholder" crossorigin="anonymous"></script>
   <script>
-    SwaggerUIBundle({ url: "${specUrl}", dom_id: "#swagger-ui" });
+    SwaggerUIBundle({ url: ${JSON.stringify(specUrl)}, dom_id: "#swagger-ui" });
   </script>
 </body>
 </html>`;

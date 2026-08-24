@@ -20,6 +20,7 @@ export interface Session {
     data: Record<string, unknown>;
     touch(): void;
     destroy(): void;
+    regenerate(): string;
 }
 
 export interface SolumjsRequest {

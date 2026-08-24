@@ -81,8 +81,19 @@ function isSafeUrl(url: string): boolean {
     }
 }
 
+const OAUTH2_STATE_TTL_MS = 10 * 60 * 1000;
+
 export class OAuth2Client {
-    private states = new Map<string, OAuth2State>();
+    private states = new Map<string, OAuth2State & { createdAt: number }>();
+
+    private pruneStates(): void {
+        const now = Date.now();
+        for (const [key, state] of this.states) {
+            if (now - state.createdAt > OAUTH2_STATE_TTL_MS) {
+                this.states.delete(key);
+            }
+        }
+    }
 
     constructor(private provider: OAuth2Provider) {
         if (!isSafeUrl(provider.authorizationUrl)) {
@@ -97,6 +108,7 @@ export class OAuth2Client {
     }
 
     generateAuthUrl(): { url: string; state: string } {
+        this.pruneStates();
         const state = crypto.randomBytes(32).toString("hex");
         const codeVerifier = crypto.randomBytes(32).toString("base64url");
         const codeChallenge = crypto.createHash("sha256").update(codeVerifier).digest("base64url");
@@ -105,6 +117,7 @@ export class OAuth2Client {
             state,
             provider: this.provider.name,
             codeVerifier,
+            createdAt: Date.now(),
         });
 
         const params = new URLSearchParams({

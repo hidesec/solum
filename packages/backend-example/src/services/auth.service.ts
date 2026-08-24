@@ -40,7 +40,7 @@ export class AuthService implements IAuthService {
             throw new UnauthorizedException("Invalid refresh token");
         }
 
-        if (this.refreshTokenStore.isUsed(payload.jti)) {
+        if (!this.refreshTokenStore.markUsedIfAbsent(payload.jti, (payload.exp ?? 0) * 1000)) {
             throw new UnauthorizedException("Refresh token has already been used");
         }
 
@@ -48,8 +48,6 @@ export class AuthService implements IAuthService {
         if (!user) {
             throw new UnauthorizedException("User no longer exists");
         }
-
-        this.refreshTokenStore.markUsed(payload.jti, (payload.exp ?? 0) * 1000);
 
         return this.issueTokens(user.id, user.email, user.role);
     }

@@ -29,6 +29,8 @@ function sanitizeField(value: string | undefined, fallback: string): string {
 }
 
 const rooms = new Map<string, Set<WsClient>>();
+const MAX_ROOMS = 100;
+const MAX_MESSAGES_PER_SECOND = 20;
 
 /**
  * WebSocket chat handler example.
@@ -38,30 +40,48 @@ const rooms = new Map<string, Set<WsClient>>();
  *
  * Protocol:
  *   Send: { "type": "join", "room": "general" }
- *   Send: { "type": "message", "content": "Hello!", "user": "Alice" }
+ *   Send: { "type": "message", "content": "Hello!" }
  *   Send: { "type": "leave" }
- *   Recv: { "type": "connected", "message": "Welcome to SolumJS Chat" }
+ *   Recv: { "type": "connected", "message": "Welcome to SolumJS Chat", "clientId": "..." }
  *   Recv: { "type": "joined", "room": "general" }
- *   Recv: { "type": "message", "room": "general", "user": "Alice", "content": "Hello!", "timestamp": "..." }
+ *   Recv: { "type": "message", "room": "general", "user": "...", "content": "Hello!", "timestamp": "..." }
  */
 @WebSocketHandler("/ws/chat")
 @Bean()
 export class ChatHandler implements WsHandler {
     handleConnection(client: WsClient) {
         let currentRoom = "general";
+        let messageCount = 0;
+        let windowStart = Date.now();
+        const clientId = crypto.randomUUID().slice(0, 8);
 
         client.onMessage((msg: WsMessage) => {
+            const now = Date.now();
+            if (now - windowStart > 1000) {
+                messageCount = 0;
+                windowStart = now;
+            }
+            messageCount++;
+            if (messageCount > MAX_MESSAGES_PER_SECOND) {
+                client.send(JSON.stringify({ type: "error", message: "Rate limit exceeded" }));
+                return;
+            }
+
             try {
                 const parsed: ChatMessage = JSON.parse(msg.data);
 
                 switch (parsed.type) {
                     case "join": {
                         const room = parsed.room ?? "general";
+                        if (rooms.size >= MAX_ROOMS && !rooms.has(room)) {
+                            client.send(JSON.stringify({ type: "error", message: "Too many rooms" }));
+                            break;
+                        }
                         if (!rooms.has(room)) rooms.set(room, new Set());
                         rooms.get(room)!.add(client);
                         currentRoom = room;
                         client.send(JSON.stringify({ type: "joined", room }));
-                        logger.info({ room }, "WebSocket client joined room");
+                        logger.info({ room, clientId }, "WebSocket client joined room");
                         break;
                     }
 
@@ -71,7 +91,7 @@ export class ChatHandler implements WsHandler {
                             const broadcast = JSON.stringify({
                                 type: "message",
                                 room: currentRoom,
-                                user: sanitizeField(parsed.user, "anonymous"),
+                                user: clientId,
                                 content: sanitizeField(parsed.content, ""),
                                 timestamp: new Date().toISOString(),
                             });
@@ -90,7 +110,7 @@ export class ChatHandler implements WsHandler {
                     }
 
                     default:
-                        client.send(JSON.stringify({ type: "error", message: `Unknown type: ${parsed.type}` }));
+                        client.send(JSON.stringify({ type: "error", message: "Unknown type" }));
                 }
             } catch {
                 client.send(JSON.stringify({ type: "error", message: "Invalid JSON" }));
@@ -99,9 +119,9 @@ export class ChatHandler implements WsHandler {
 
         client.onClose(() => {
             rooms.get(currentRoom)?.delete(client);
-            logger.info("WebSocket client disconnected");
+            logger.info({ clientId }, "WebSocket client disconnected");
         });
 
-        client.send(JSON.stringify({ type: "connected", message: "Welcome to SolumJS Chat" }));
+        client.send(JSON.stringify({ type: "connected", message: "Welcome to SolumJS Chat", clientId }));
     }
 }

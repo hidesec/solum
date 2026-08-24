@@ -208,7 +208,8 @@ export function weaveIfApplicable<T>(instance: T): T {
             let fn = exec;
 
             if (retry) {
-                const { maxAttempts = 3, backoffMs = 100, backoffMultiplier = 2, maxBackoffMs = 30000 } = retry.options;
+                const { maxAttempts: rawMax = 3, backoffMs = 100, backoffMultiplier = 2, maxBackoffMs = 30000 } = retry.options;
+                const maxAttempts = Math.min(Math.max(rawMax, 1), 10);
                 const retryFn = async () => {
                     let lastError: unknown;
                     for (let attempt = 1; attempt <= maxAttempts; attempt++) {

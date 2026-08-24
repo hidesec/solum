@@ -20,6 +20,13 @@ export class RefreshTokenStore implements IRefreshTokenStore {
         this.used.set(jti, { expiresAt });
     }
 
+    markUsedIfAbsent(jti: string, expiresAt: number): boolean {
+        this.prune();
+        if (this.used.has(jti)) return false;
+        this.used.set(jti, { expiresAt });
+        return true;
+    }
+
     isUsed(jti: string): boolean {
         this.prune();
         return this.used.has(jti);

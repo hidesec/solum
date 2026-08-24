@@ -21,7 +21,9 @@ export async function connectRedis(url: string): Promise<RedisClientV4> {
     }
 
     const client = redis.createClient({ url });
-    client.on("error", () => {
+    client.on("error", (...args: unknown[]) => {
+        const msg = args[0] instanceof Error ? args[0].message : String(args[0]);
+        console.error("[SolumJS] Redis connection error:", msg);
     });
     await client.connect();
     return client;
@@ -35,7 +37,11 @@ export class RedisCacheStore implements CacheStore {
     async get<T>(key: string): Promise<T | undefined> {
         const raw = await this.client.get(KEY_PREFIX + key);
         if (raw === null) return undefined;
-        return JSON.parse(raw) as T;
+        try {
+            return JSON.parse(raw) as T;
+        } catch {
+            return undefined;
+        }
     }
 
     async set(key: string, value: unknown, ttlSeconds: number): Promise<void> {

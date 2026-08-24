@@ -1,7 +1,9 @@
 import http from "http";
 import https from "https";
+import dns from "dns";
 import { container } from "@solumjs/core";
 
+const MAX_REDIRECTS = 5;
 const HTTP_CLIENT_METADATA_KEY = "custom:http-client";
 const HTTP_METHOD_METADATA_KEY = "custom:http-methods";
 const HTTP_INTERCEPTOR_METADATA_KEY = "custom:http-interceptor";
@@ -164,88 +166,148 @@ interface RequestOptions {
     timeout?: number;
 }
 
-function makeRequest(options: RequestOptions): Promise<unknown> {
+function isPrivateIP(ip: string): boolean {
+    const clean = ip.replace(/^\[|]$/g, "").toLowerCase();
+    if (clean === "127.0.0.1" || clean === "::1" || clean === "0.0.0.0") return true;
+    if (clean === "localhost") return true;
+    const parts = clean.split(".");
+    if (parts.length === 4) {
+        const [a, b] = parts.map(Number);
+        if (a === 10) return true;
+        if (a === 172 && b >= 16 && b <= 31) return true;
+        if (a === 192 && b === 168) return true;
+        if (a === 169 && parts[1] === "254") return true;
+    }
+    if (clean.startsWith("::ffff:")) {
+        const v4 = clean.slice(7);
+        const v4Parts = v4.split(".");
+        if (v4Parts.length === 4) {
+            const [a, b] = v4Parts.map(Number);
+            if (a === 10) return true;
+            if (a === 172 && b >= 16 && b <= 31) return true;
+            if (a === 192 && b === 168) return true;
+            if (a === 169 && v4Parts[1] === "254") return true;
+            if (a === 127) return true;
+        }
+    }
+    return false;
+}
+
+function resolveAndCheck(hostname: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        dns.lookup(hostname, { all: true }, (err, addresses) => {
+            if (err) {
+                reject(new Error("SSRF protection: DNS resolution failed"));
+                return;
+            }
+            for (const addr of addresses) {
+                if (isPrivateIP(addr.address)) {
+                    reject(new Error("SSRF protection: resolved to private/internal address"));
+                    return;
+                }
+            }
+            resolve();
+        });
+    });
+}
+
+function makeRequest(options: RequestOptions, redirectCount = 0): Promise<unknown> {
     return new Promise((resolve, reject) => {
         const url = new URL(options.url);
 
-        const hostname = url.hostname.toLowerCase();
-        const isInternal = (
-            hostname === "localhost" ||
-            hostname === "127.0.0.1" ||
-            hostname === "::1" ||
-            hostname === "0.0.0.0" ||
-            hostname === "[::1]" ||
-            hostname === "[0:0:0:0:0:0:0:1]" ||
-            hostname.startsWith("[::ffff:") ||
-            hostname.startsWith("10.") ||
-            hostname.startsWith("192.168.") ||
-            /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname) ||
-            /^169\.254\./.test(hostname) ||
-            hostname.endsWith(".local") ||
-            hostname.endsWith(".internal")
-        );
-        if (isInternal) {
-            reject(new Error("SSRF protection: requests to internal/private addresses are blocked"));
+        if (!["http:", "https:"].includes(url.protocol)) {
+            reject(new Error("SSRF protection: only HTTP/HTTPS protocols are allowed"));
             return;
         }
 
-        const isHttps = url.protocol === "https:";
-        const client = isHttps ? https : http;
-
-        const headers: Record<string, string> = {
-            "content-type": "application/json",
-            ...options.headers,
-        };
-
-        const bodyStr = options.body ? JSON.stringify(options.body) : undefined;
-        if (bodyStr) {
-            headers["content-length"] = Buffer.byteLength(bodyStr).toString();
+        const hostname = url.hostname.toLowerCase();
+        if (
+            hostname.endsWith(".local") ||
+            hostname.endsWith(".internal")
+        ) {
+            reject(new Error("SSRF protection: requests to internal domains are blocked"));
+            return;
         }
 
-        const req = client.request(
-            {
-                hostname: url.hostname,
-                port: url.port || (isHttps ? 443 : 80),
-                path: url.pathname + url.search,
-                method: options.method,
-                headers,
-                timeout: options.timeout || 30000,
-            },
-            (res) => {
-                const chunks: Buffer[] = [];
-                res.on("data", (chunk) => chunks.push(chunk));
-                res.on("end", () => {
-                    const text = Buffer.concat(chunks).toString("utf8");
-                    let body: unknown;
-                    try {
-                        body = JSON.parse(text);
-                    } catch {
-                        body = text;
-                    }
+        resolveAndCheck(hostname).then(() => {
+            const isHttps = url.protocol === "https:";
+            const client = isHttps ? https : http;
 
-                    if (res.statusCode && res.statusCode >= 400) {
-                        const error = new Error(`HTTP ${res.statusCode}: ${text}`);
-                        (error as any).statusCode = res.statusCode;
-                        (error as any).body = body;
-                        reject(error);
+            const headers: Record<string, string> = {
+                "content-type": "application/json",
+                ...options.headers,
+            };
+
+            const bodyStr = options.body ? JSON.stringify(options.body) : undefined;
+            if (bodyStr) {
+                headers["content-length"] = Buffer.byteLength(bodyStr).toString();
+            }
+
+            const req = client.request(
+                {
+                    hostname: url.hostname,
+                    port: url.port || (isHttps ? 443 : 80),
+                    path: url.pathname + url.search,
+                    method: options.method,
+                    headers,
+                    timeout: options.timeout || 30000,
+                },
+                (res) => {
+                    if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                        if (redirectCount >= MAX_REDIRECTS) {
+                            reject(new Error("SSRF protection: too many redirects"));
+                            res.resume();
+                            return;
+                        }
+                        try {
+                            const redirectUrl = new URL(res.headers.location, options.url);
+                            res.resume();
+                            resolve(makeRequest({
+                                ...options,
+                                url: redirectUrl.toString(),
+                            }, redirectCount + 1));
+                        } catch {
+                            reject(new Error("SSRF protection: invalid redirect URL"));
+                            res.resume();
+                        }
                         return;
                     }
 
-                    resolve(body);
-                });
+                    const chunks: Buffer[] = [];
+                    res.on("data", (chunk) => chunks.push(chunk));
+                    res.on("end", () => {
+                        const text = Buffer.concat(chunks).toString("utf8");
+                        let body: unknown;
+                        try {
+                            body = JSON.parse(text);
+                        } catch {
+                            body = text;
+                        }
+
+                        if (res.statusCode && res.statusCode >= 400) {
+                            const error = new Error(`HTTP ${res.statusCode}: ${text}`);
+                            (error as any).statusCode = res.statusCode;
+                            (error as any).body = body;
+                            reject(error);
+                            return;
+                        }
+
+                        resolve(body);
+                    });
+                }
+            );
+
+            req.on("error", reject);
+            req.on("timeout", () => {
+                req.destroy();
+                reject(new Error(`Request timeout after ${options.timeout || 30000}ms`));
+            });
+
+            if (bodyStr) {
+                req.write(bodyStr);
             }
-        );
 
-        req.on("error", reject);
-        req.on("timeout", () => {
-            req.destroy();
-            reject(new Error(`Request timeout after ${options.timeout || 30000}ms`));
-        });
-
-        if (bodyStr) {
-            req.write(bodyStr);
-        }
-
-        req.end();
+            req.end();
+        }).catch(reject);
     });
 }

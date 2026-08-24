@@ -74,7 +74,7 @@ export function createRateLimit(options: RateLimitOptions): SolumjsMiddleware {
 
     return (req: SolumjsRequest, res: SolumjsResponse, next: SolumjsNext) => {
         const ip = req.raw.socket?.remoteAddress ?? "unknown";
-        const key = `${ip}:${req.path}`;
+        const key = ip;
         const now = Date.now();
 
         let bucket = buckets.get(key);

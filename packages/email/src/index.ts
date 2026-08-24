@@ -63,6 +63,10 @@ function sanitizeHeaderValue(value: string): string {
     return value.replace(/[\r\n]/g, "");
 }
 
+function sanitizeSmtpAddress(addr: string): string {
+    return addr.replace(/[<>\r\n]/g, "").trim();
+}
+
 function buildMimeMessage(options: EmailOptions, from: string): string {
     const boundary = `----=_Part_${crypto.randomBytes(16).toString("hex")}`;
     const messageId = `<${crypto.randomUUID()}@solumjs>`;
@@ -205,7 +209,7 @@ async function sendMailDirect(config: SmtpConfig, options: EmailOptions): Promis
                         );
                     }
 
-                    await sendSmtpCommand(tlsSocket, `MAIL FROM:<${from}>\r\n`, 250);
+                    await sendSmtpCommand(tlsSocket, `MAIL FROM:<${sanitizeSmtpAddress(from)}>\r\n`, 250);
 
                     const recipients = [
                         ...(Array.isArray(options.to) ? options.to : [options.to]),
@@ -213,7 +217,7 @@ async function sendMailDirect(config: SmtpConfig, options: EmailOptions): Promis
                         ...(options.bcc ? (Array.isArray(options.bcc) ? options.bcc : [options.bcc]) : []),
                     ];
                     for (const recipient of recipients) {
-                        await sendSmtpCommand(tlsSocket, `RCPT TO:<${recipient}>\r\n`, 250);
+                        await sendSmtpCommand(tlsSocket, `RCPT TO:<${sanitizeSmtpAddress(recipient)}>\r\n`, 250);
                     }
 
                     await sendSmtpCommand(tlsSocket, `DATA\r\n`, 354);
@@ -245,14 +249,14 @@ async function sendMailDirect(config: SmtpConfig, options: EmailOptions): Promis
                             235
                         );
                     }
-                    await sendSmtpCommand(tlsSocket, `MAIL FROM:<${from}>\r\n`, 250);
+                    await sendSmtpCommand(tlsSocket, `MAIL FROM:<${sanitizeSmtpAddress(from)}>\r\n`, 250);
                     const recipients = [
                         ...(Array.isArray(options.to) ? options.to : [options.to]),
                         ...(options.cc ? (Array.isArray(options.cc) ? options.cc : [options.cc]) : []),
                         ...(options.bcc ? (Array.isArray(options.bcc) ? options.bcc : [options.bcc]) : []),
                     ];
                     for (const r of recipients) {
-                        await sendSmtpCommand(tlsSocket, `RCPT TO:<${r}>\r\n`, 250);
+                        await sendSmtpCommand(tlsSocket, `RCPT TO:<${sanitizeSmtpAddress(r)}>\r\n`, 250);
                     }
                     await sendSmtpCommand(tlsSocket, `DATA\r\n`, 354);
                     const dataLines = mimeMessage.split("\r\n").join(".\r\n");

@@ -36,6 +36,8 @@ export class InMemoryCacheStore implements CacheStore {
     }
 
     async set(key: string, value: unknown, ttlSeconds: number): Promise<void> {
+        const serialized = JSON.stringify(value);
+        if (serialized.length > 1024 * 1024) return;
         if (this.entries.size >= this.maxEntries) {
             this.evictExpired();
             if (this.entries.size >= this.maxEntries) {

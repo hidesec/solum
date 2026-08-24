@@ -97,14 +97,21 @@ function parseCron(expression: string): CronFields {
     };
 }
 
+const MAX_CRON_ITERATIONS = 527040;
+
 function nextCronDate(fields: CronFields, from: Date): Date {
     const candidate = new Date(from.getTime());
     candidate.setSeconds(0, 0);
     candidate.setMinutes(candidate.getMinutes() + 1);
 
     const limit = new Date(from.getTime() + 366 * 24 * 60 * 60 * 1000);
+    let iterations = 0;
 
     while (candidate <= limit) {
+        iterations++;
+        if (iterations > MAX_CRON_ITERATIONS) {
+            throw new Error("No next run found for cron expression (exceeded iteration limit)");
+        }
         if (
             fields.months.has(candidate.getMonth() + 1) &&
             fields.daysOfMonth.has(candidate.getDate()) &&
@@ -135,11 +142,21 @@ function parseIntervalMs(expression: string): number {
     return value * multipliers[match[2]];
 }
 
+const runningTasks = new Set<string>();
+
 async function executeTask(task: ScheduledTask, instance: any): Promise<void> {
+    const taskKey = `${task.className}.${task.methodName}`;
+    if (runningTasks.has(taskKey)) {
+        getFrameworkLogger().warn({ task: taskKey }, "Skipping overlapping scheduled task execution");
+        return;
+    }
+    runningTasks.add(taskKey);
     try {
         await instance[task.methodName]();
     } catch (err) {
-        getFrameworkLogger().error({ err, task: `${task.className}.${task.methodName}` }, "Scheduled task failed");
+        getFrameworkLogger().error({ err, task: taskKey }, "Scheduled task failed");
+    } finally {
+        runningTasks.delete(taskKey);
     }
 }
 

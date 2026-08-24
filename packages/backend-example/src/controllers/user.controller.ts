@@ -48,6 +48,8 @@ export class UserController {
 
     @Get("/recent")
     @ResponseStatus(200)
+    @UseGuards(JwtAuthGuard)
+    @PreAuthorize("hasRole('ADMIN')")
     async findRecentByEmails(
         @Query("emails") emails: string,
         @Query("limit") limit: string,
@@ -72,6 +74,8 @@ export class UserController {
 
     @Get("/")
     @ResponseStatus(200)
+    @UseGuards(JwtAuthGuard)
+    @PreAuthorize("hasRole('ADMIN')")
     async listUsers(@Query() query: Record<string, unknown>, @Req() req: SolumjsRequest) {
         const pageable = parsePageable(query);
         req.log.info({ page: pageable.page, size: pageable.size, sorts: pageable.sorts }, "Listing users");

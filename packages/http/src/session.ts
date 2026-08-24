@@ -72,19 +72,30 @@ export function createSessionMiddleware(options: SessionOptions = {}): SolumjsMi
         }
 
         let destroyed = false;
+        let sessionId = id;
 
         const session: Session = {
-            id,
+            get id() { return sessionId; },
             data,
             touch() {
-                store.set(id, session.data);
+                store.set(sessionId, session.data);
             },
             destroy() {
                 destroyed = true;
-                store.destroy(id);
+                store.destroy(sessionId);
                 if (!res.headersSent) {
                     res.clearCookie(cookieName, { ...cookieDefaults, ...options.cookie, maxAge: 0 });
                 }
+            },
+            regenerate(): string {
+                store.destroy(sessionId);
+                const newId = randomUUID();
+                sessionId = newId;
+                store.set(newId, session.data);
+                if (!res.headersSent) {
+                    res.setCookie(cookieName, newId, { ...cookieDefaults, ...options.cookie });
+                }
+                return newId;
             },
         };
 
@@ -96,7 +107,7 @@ export function createSessionMiddleware(options: SessionOptions = {}): SolumjsMi
 
         res.raw.on("finish", () => {
             if (!destroyed) {
-                store.set(id, session.data);
+                store.set(sessionId, session.data);
             }
         });
 

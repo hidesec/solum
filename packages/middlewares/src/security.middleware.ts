@@ -1,4 +1,4 @@
-import { getFrameworkConfig } from "@solumjs/core";
+import { getFrameworkConfig, getFrameworkLogger } from "@solumjs/core";
 import { SolumjsMiddleware, SolumjsRequest, SolumjsResponse, SolumjsNext } from "@solumjs/http";
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -58,6 +58,49 @@ interface RateLimitOptions {
     max: number;
 }
 
+export function createRateLimit(options: RateLimitOptions): SolumjsMiddleware {
+    const buckets = new Map<string, RateLimitBucket>();
+
+    return (req: SolumjsRequest, res: SolumjsResponse, next: SolumjsNext) => {
+        const ip = req.raw.socket?.remoteAddress ?? "unknown";
+        const key = `${ip}:${req.path}`;
+        const now = Date.now();
+
+        let bucket = buckets.get(key);
+        if (!bucket || bucket.resetAt <= now) {
+            bucket = { count: 0, resetAt: now + options.windowMs };
+            buckets.set(key, bucket);
+        }
+
+        bucket.count++;
+
+        const remaining = Math.max(options.max - bucket.count, 0);
+        const resetSeconds = Math.ceil((bucket.resetAt - now) / 1000);
+
+        res.raw.setHeader("ratelimit-policy", `${options.max};w=${Math.round(options.windowMs / 1000)}`);
+        res.raw.setHeader("ratelimit-limit", String(options.max));
+        res.raw.setHeader("ratelimit-remaining", String(remaining));
+        res.raw.setHeader("ratelimit-reset", String(resetSeconds));
+
+        if (bucket.count > options.max) {
+            res.raw.setHeader("retry-after", String(resetSeconds));
+            res.status(429).json({
+                status: "error",
+                message: "Too many requests, please try again later.",
+            });
+            return;
+        }
+
+        if (buckets.size > 10_000) {
+            for (const [bucketKey, value] of buckets.entries()) {
+                if (value.resetAt <= now) buckets.delete(bucketKey);
+            }
+        }
+
+        next();
+    };
+}
+
 function rateLimit(options: RateLimitOptions): SolumjsMiddleware {
     const buckets = new Map<string, RateLimitBucket>();
 
@@ -102,11 +145,18 @@ function rateLimit(options: RateLimitOptions): SolumjsMiddleware {
 
 export function createSecurityMiddlewares(): SolumjsMiddleware[] {
     const config = getFrameworkConfig();
+    const logger = getFrameworkLogger();
+    const corsOrigin = config.get("CORS_ORIGIN");
+
+    if (!corsOrigin) {
+        logger.warn("[Security] CORS_ORIGIN not configured — cross-origin requests are DENIED. Set CORS_ORIGIN to allow specific origins.");
+    }
+
     return [
         securityHeaders(),
         cors({
-            origin: config.get("CORS_ORIGIN") ?? "*",
-            credentials: true,
+            origin: corsOrigin || "DENY",
+            credentials: !!corsOrigin,
         }),
         rateLimit({
             windowMs: 15 * 60 * 1000,

@@ -19,7 +19,7 @@ describe("cookies", () => {
 
     it("serializes with defaults", () => {
         const cookie = serializeSetCookie("sid", "abc");
-        expect(cookie).toBe("sid=abc; Path=/; HttpOnly");
+        expect(cookie).toBe("sid=abc; Path=/; HttpOnly; SameSite=Lax");
     });
 
     it("serializes full options", () => {
@@ -37,6 +37,6 @@ describe("cookies", () => {
     });
 
     it("omits HttpOnly when disabled", () => {
-        expect(serializeSetCookie("a", "b", { httpOnly: false })).toBe("a=b; Path=/");
+        expect(serializeSetCookie("a", "b", { httpOnly: false })).toBe("a=b; Path=/; SameSite=Lax");
     });
 });

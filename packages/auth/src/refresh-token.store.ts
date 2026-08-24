@@ -1,6 +1,16 @@
 import { Bean } from "@solumjs/core";
 import { IRefreshTokenStore } from "./refresh-token.store.interface";
 
+/**
+ * In-memory refresh token store.
+ *
+ * WARNING: This store is NOT suitable for production multi-instance deployments.
+ * Token reuse detection only works within a single process. In a multi-instance
+ * setup, use a persistent store (Redis, database) instead.
+ *
+ * For single-instance deployments, this store is sufficient and provides
+ * automatic pruning of expired tokens.
+ */
 @Bean("IRefreshTokenStore")
 export class RefreshTokenStore implements IRefreshTokenStore {
     private readonly used = new Map<string, { expiresAt: number }>();

@@ -38,8 +38,6 @@ export function serializeSetCookie(name: string, value: string, options: CookieO
     if (options.httpOnly !== false) {
         parts.push("HttpOnly");
     }
-    if (options.sameSite) {
-        parts.push(`SameSite=${options.sameSite}`);
-    }
+    parts.push(`SameSite=${options.sameSite ?? "Lax"}`);
     return parts.join("; ");
 }

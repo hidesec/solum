@@ -7,6 +7,12 @@ export interface MssqlConnectionOptions {
     database: string;
     user: string;
     password: string;
+    pool?: {
+        min?: number;
+        max?: number;
+        idleTimeoutMillis?: number;
+        connectionTimeoutMillis?: number;
+    };
 }
 
 type MssqlRequest = {
@@ -64,7 +70,12 @@ export class MssqlDriver implements DatabaseDriver {
             user: options.user,
             password: options.password,
             options: { encrypt: false, trustServerCertificate: true },
-            requestTimeout: 30_000,
+            requestTimeout: options.pool?.connectionTimeoutMillis ?? 30_000,
+            pool: {
+                min: options.pool?.min ?? 0,
+                max: options.pool?.max ?? 10,
+                idleTimeoutMillis: options.pool?.idleTimeoutMillis ?? 30_000,
+            },
         });
         return driver;
     }

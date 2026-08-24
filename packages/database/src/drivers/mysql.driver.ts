@@ -7,6 +7,12 @@ export interface MysqlConnectionOptions {
     database: string;
     user: string;
     password: string;
+    pool?: {
+        min?: number;
+        max?: number;
+        idleTimeoutMillis?: number;
+        connectionTimeoutMillis?: number;
+    };
 }
 
 type MysqlPool = {
@@ -55,7 +61,7 @@ export class MysqlDriver implements DatabaseDriver {
             database: options.database,
             user: options.user,
             password: options.password,
-            connectionLimit: 10,
+            connectionLimit: options.pool?.max ?? 10,
             dateStrings: false,
         });
         return driver;

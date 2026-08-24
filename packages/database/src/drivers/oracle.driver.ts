@@ -5,6 +5,12 @@ export interface OracleConnectionOptions {
     user: string;
     password: string;
     connectString: string;
+    pool?: {
+        min?: number;
+        max?: number;
+        idleTimeoutMillis?: number;
+        connectionTimeoutMillis?: number;
+    };
 }
 
 type OracleConnection = {
@@ -48,8 +54,8 @@ export class OracleDriver implements DatabaseDriver {
             user: options.user,
             password: options.password,
             connectString: options.connectString,
-            poolMin: 1,
-            poolMax: 10,
+            poolMin: options.pool?.min ?? 1,
+            poolMax: options.pool?.max ?? 10,
             outFormat: oracledb.OUT_FORMAT_OBJECT,
         });
         return driver;

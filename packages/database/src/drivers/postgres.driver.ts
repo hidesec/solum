@@ -8,6 +8,12 @@ export interface PostgresConnectionOptions {
     database: string;
     user: string;
     password: string;
+    pool?: {
+        min?: number;
+        max?: number;
+        idleTimeoutMillis?: number;
+        connectionTimeoutMillis?: number;
+    };
 }
 
 function toQueryResult(result: PgQueryResult): QueryResult {
@@ -26,9 +32,10 @@ export class PostgresDriver implements DatabaseDriver {
             database: options.database,
             user: options.user,
             password: options.password,
-            max: 10,
-            idleTimeoutMillis: 30_000,
-            connectionTimeoutMillis: 5_000,
+            min: options.pool?.min ?? 0,
+            max: options.pool?.max ?? 10,
+            idleTimeoutMillis: options.pool?.idleTimeoutMillis ?? 30_000,
+            connectionTimeoutMillis: options.pool?.connectionTimeoutMillis ?? 5_000,
         });
     }
 

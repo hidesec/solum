@@ -27,6 +27,7 @@ import {
 import { componentScan } from "./component-scan";
 import { listRegisteredRoutes, mountControllers } from "./router-factory";
 import { DocsOptions, mountOpenApi } from "./openapi";
+import { createYamlConfig } from "./profile-config";
 
 export interface CreateApplicationOptions {
     logger?: LoggerPort;
@@ -42,6 +43,9 @@ export interface CreateApplicationOptions {
     docs?: boolean | DocsOptions;
     onListen?: (port: number) => void;
     shutdownTimeoutMs?: number;
+    useYamlConfig?: boolean;
+    configDir?: string;
+    configFileName?: string;
 }
 
 export interface SolumApplication {
@@ -55,7 +59,13 @@ export async function createApplication(
     options: CreateApplicationOptions = {}
 ): Promise<SolumApplication> {
     if (options.logger) setFrameworkLogger(options.logger);
-    if (options.config) setFrameworkConfig(options.config);
+    if (options.config) {
+        setFrameworkConfig(options.config);
+    } else if (options.useYamlConfig) {
+        const yamlConfig = createYamlConfig(options.configDir, options.configFileName);
+        const { createEnvConfig } = await import("./load-env");
+        setFrameworkConfig(createEnvConfig(yamlConfig));
+    }
 
     const logger = options.logger ?? getFrameworkLogger();
     const config = getFrameworkConfig();

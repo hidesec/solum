@@ -20,11 +20,18 @@ export async function createDatabaseDriver(): Promise<DatabaseDriver> {
     const user = config.get("DB_USER") ?? "";
     const password = config.get("DB_PASSWORD") ?? "";
 
+    const poolConfig = {
+        min: config.getNumber("DB_POOL_MIN"),
+        max: config.getNumber("DB_POOL_MAX"),
+        idleTimeoutMillis: config.getNumber("DB_POOL_IDLE_TIMEOUT"),
+        connectionTimeoutMillis: config.getNumber("DB_POOL_CONNECT_TIMEOUT"),
+    };
+
     switch (client) {
         case "postgres": {
-            const driver = new PostgresDriver({ host, port, database, user, password });
+            const driver = new PostgresDriver({ host, port, database, user, password, pool: poolConfig });
             await driver.connect();
-            getFrameworkLogger().info(`Connected to PostgreSQL at ${host}:${port}/${database}`);
+            getFrameworkLogger().info(`Connected to PostgreSQL at ${host}:${port}/${database} (pool: min=${poolConfig.min ?? 0}, max=${poolConfig.max ?? 10})`);
             return driver;
         }
 
@@ -38,17 +45,17 @@ export async function createDatabaseDriver(): Promise<DatabaseDriver> {
 
         case "mysql": {
             const { MysqlDriver } = await import("./drivers/mysql.driver");
-            const driver = await MysqlDriver.create({ host, port, database, user, password });
+            const driver = await MysqlDriver.create({ host, port, database, user, password, pool: poolConfig });
             await driver.connect();
-            getFrameworkLogger().info(`Connected to MySQL at ${host}:${port}/${database}`);
+            getFrameworkLogger().info(`Connected to MySQL at ${host}:${port}/${database} (pool: max=${poolConfig.max ?? 10})`);
             return driver;
         }
 
         case "mssql": {
             const { MssqlDriver } = await import("./drivers/mssql.driver");
-            const driver = await MssqlDriver.create({ server: host, port, database, user, password });
+            const driver = await MssqlDriver.create({ server: host, port, database, user, password, pool: poolConfig });
             await driver.connect();
-            getFrameworkLogger().info(`Connected to MSSQL at ${host}:${port}/${database}`);
+            getFrameworkLogger().info(`Connected to MSSQL at ${host}:${port}/${database} (pool: max=${poolConfig.max ?? 10})`);
             return driver;
         }
 
@@ -58,9 +65,10 @@ export async function createDatabaseDriver(): Promise<DatabaseDriver> {
                 user,
                 password,
                 connectString: `${host}:${port}/${database}`,
+                pool: poolConfig,
             });
             await driver.connect();
-            getFrameworkLogger().info(`Connected to Oracle at ${host}:${port}/${database}`);
+            getFrameworkLogger().info(`Connected to Oracle at ${host}:${port}/${database} (pool: min=${poolConfig.min ?? 1}, max=${poolConfig.max ?? 10})`);
             return driver;
         }
 

@@ -250,16 +250,17 @@ export function mountOpenApi(adapter: HttpAdapter, options: DocsOptions = {}): v
 }
 
 function renderSwaggerHtml(specUrl: string, title: string): string {
+    const safeTitle = title.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#x27;" }[c] ?? c));
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${title}</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  <title>${safeTitle}</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" integrity="sha384-Q8k0JRmG3CMQ4wjY01pHEoXbkRJaDEO6z7M7nNYb0hHBnFGhIouEAKBa7wFJM" crossorigin="anonymous" />
 </head>
 <body>
   <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" integrity="sha384-placeholder" crossorigin="anonymous"></script>
   <script>
     SwaggerUIBundle({ url: "${specUrl}", dom_id: "#swagger-ui" });
   </script>

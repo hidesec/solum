@@ -49,7 +49,7 @@ export class GoogleOAuth2Provider implements OAuth2Provider {
     constructor(options?: { clientId?: string; clientSecret?: string; redirectUri?: string; scopes?: string[] }) {
         this.clientId = options?.clientId || getFrameworkConfig().get("GOOGLE_CLIENT_ID") || "";
         this.clientSecret = options?.clientSecret || getFrameworkConfig().get("GOOGLE_CLIENT_SECRET") || "";
-        this.redirectUri = options?.redirectUri || getFrameworkConfig().get("GOOGLE_REDIRECT_URI") || "http://localhost:3000/auth/callback/google";
+        this.redirectUri = options?.redirectUri || getFrameworkConfig().get("GOOGLE_REDIRECT_URI") || "https://localhost:3000/auth/callback/google";
         if (options?.scopes) this.scopes = options.scopes;
     }
 }
@@ -67,15 +67,34 @@ export class GithubOAuth2Provider implements OAuth2Provider {
     constructor(options?: { clientId?: string; clientSecret?: string; redirectUri?: string; scopes?: string[] }) {
         this.clientId = options?.clientId || getFrameworkConfig().get("GITHUB_CLIENT_ID") || "";
         this.clientSecret = options?.clientSecret || getFrameworkConfig().get("GITHUB_CLIENT_SECRET") || "";
-        this.redirectUri = options?.redirectUri || getFrameworkConfig().get("GITHUB_REDIRECT_URI") || "http://localhost:3000/auth/callback/github";
+        this.redirectUri = options?.redirectUri || getFrameworkConfig().get("GITHUB_REDIRECT_URI") || "https://localhost:3000/auth/callback/github";
         if (options?.scopes) this.scopes = options.scopes;
+    }
+}
+
+function isSafeUrl(url: string): boolean {
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === "https:" || parsed.protocol === "http:";
+    } catch {
+        return false;
     }
 }
 
 export class OAuth2Client {
     private states = new Map<string, OAuth2State>();
 
-    constructor(private provider: OAuth2Provider) {}
+    constructor(private provider: OAuth2Provider) {
+        if (!isSafeUrl(provider.authorizationUrl)) {
+            throw new Error("OAuth2 authorizationUrl must be a valid HTTPS or HTTP URL");
+        }
+        if (!isSafeUrl(provider.tokenUrl)) {
+            throw new Error("OAuth2 tokenUrl must be a valid HTTPS or HTTP URL");
+        }
+        if (!isSafeUrl(provider.userInfoUrl)) {
+            throw new Error("OAuth2 userInfoUrl must be a valid HTTPS or HTTP URL");
+        }
+    }
 
     generateAuthUrl(): { url: string; state: string } {
         const state = crypto.randomBytes(32).toString("hex");

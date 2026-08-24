@@ -167,6 +167,24 @@ interface RequestOptions {
 function makeRequest(options: RequestOptions): Promise<unknown> {
     return new Promise((resolve, reject) => {
         const url = new URL(options.url);
+
+        const hostname = url.hostname;
+        const isInternal = (
+            hostname === "localhost" ||
+            hostname === "127.0.0.1" ||
+            hostname === "::1" ||
+            hostname === "0.0.0.0" ||
+            hostname.startsWith("10.") ||
+            hostname.startsWith("192.168.") ||
+            /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname) ||
+            hostname.endsWith(".local") ||
+            hostname.endsWith(".internal")
+        );
+        if (isInternal && process.env.NODE_ENV === "production") {
+            reject(new Error("SSRF protection: requests to internal/private addresses are blocked in production"));
+            return;
+        }
+
         const isHttps = url.protocol === "https:";
         const client = isHttps ? https : http;
 

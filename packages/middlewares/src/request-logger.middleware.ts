@@ -6,6 +6,7 @@ export function requestLogger(): SolumjsMiddleware {
     return (req, res, next) => {
         const reqId = randomUUID();
         const start = process.hrtime.bigint();
+        const clientIp = req.raw.socket?.remoteAddress ?? req.headers["x-forwarded-for"] ?? req.headers["x-real-ip"] ?? "unknown";
 
         const requestLogger: SolumjsLogger = getFrameworkLogger().child({ reqId });
         (req as { log: SolumjsLogger }).log = requestLogger;
@@ -19,6 +20,7 @@ export function requestLogger(): SolumjsMiddleware {
                 statusCode,
                 responseTime: Math.round(durationMs * 1000) / 1000,
                 reqId,
+                clientIp,
             };
 
             if (statusCode >= 500) {

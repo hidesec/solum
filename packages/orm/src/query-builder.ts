@@ -113,11 +113,25 @@ export class QueryBuilder<T extends object> {
         return this;
     }
 
+    /**
+     * Execute raw SQL in a WHERE clause.
+     *
+     * SECURITY WARNING: Always use parameterized placeholders (?) for user input.
+     * CORRECT:  whereRaw("column = ? AND status = ?", [userInput, "active"])
+     * WRONG:    whereRaw("column = '" + userInput + "'")  // SQL INJECTION!
+     */
     whereRaw(sql: string, params: any[] = []): this {
         this.wheres.push({ type: "raw", connector: "AND", sql, params });
         return this;
     }
 
+    /**
+     * Execute raw SQL in an OR WHERE clause.
+     *
+     * SECURITY WARNING: Always use parameterized placeholders (?) for user input.
+     * CORRECT:  orWhereRaw("column = ?", [userInput])
+     * WRONG:    orWhereRaw("column = '" + userInput + "'")  // SQL INJECTION!
+     */
     orWhereRaw(sql: string, params: any[] = []): this {
         this.wheres.push({ type: "raw", connector: "OR", sql, params });
         return this;

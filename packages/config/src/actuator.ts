@@ -7,6 +7,7 @@ export interface ActuatorOptions {
     healthchecks?: HealthCheck[];
     info?: Record<string, unknown>;
     customEndpoints?: CustomEndpoint[];
+    authGuard?: (req: any, res: any) => boolean;
 }
 
 export interface HealthCheck {
@@ -79,15 +80,24 @@ function formatUptime(ms: number): string {
 export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {}): void {
     const basePath = options.basePath ?? "/actuator";
     const healthchecks: HealthCheck[] = options.healthchecks ?? [];
+    const authGuard = options.authGuard;
 
-    const jsonHandler = (data: unknown) => (req: any, res: any) => {
-        res.status(200).json(data);
+    const protectedHandler = (handler: (req: any, res: any) => void | Promise<void>) => (req: any, res: any) => {
+        if (authGuard && !authGuard(req, res)) {
+            res.status(401).json({ status: "error", message: "Unauthorized" });
+            return;
+        }
+        return handler(req, res);
     };
+
+    const jsonHandler = (data: unknown) => protectedHandler((_req: any, res: any) => {
+        res.status(200).json(data);
+    });
 
     adapter.registerRoute(basePath, {
         method: "get",
         path: "/health",
-        handler: async (_req: any, res: any) => {
+        handler: protectedHandler(async (_req: any, res: any) => {
             const checks: Record<string, HealthStatus> = {};
 
             checks.database = await defaultDatabaseHealthCheck();
@@ -110,7 +120,7 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
                 status: overallStatus,
                 checks,
             });
-        },
+        }),
     });
 
     adapter.registerRoute(basePath, {

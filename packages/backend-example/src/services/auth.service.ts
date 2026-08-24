@@ -1,4 +1,4 @@
-import { inject } from "@solumjs/core";
+import { inject, getFrameworkLogger } from "@solumjs/core";
 import { LoginRequestDto } from "@dto/login.dto";
 import { Bean } from "@solumjs/core";
 import { UnauthorizedException } from "@solumjs/core";
@@ -8,6 +8,8 @@ import { IAuthService, LoginResponse } from "./auth.service.interface";
 import { IJwtService } from "@solumjs/auth";
 import { REFRESH_TOKEN_TTL } from "@solumjs/auth";
 import { IRefreshTokenStore } from "@solumjs/auth";
+
+const logger = getFrameworkLogger();
 
 @Bean("IAuthService")
 export class AuthService implements IAuthService {
@@ -24,6 +26,7 @@ export class AuthService implements IAuthService {
         const user = await this.userRepository.findByEmail(dto.email);
 
         if (!user?.passwordHash || !verifyPassword(dto.password, user.passwordHash)) {
+            logger.warn({ email: dto.email }, "Failed login attempt");
             throw new UnauthorizedException("Invalid email or password");
         }
 

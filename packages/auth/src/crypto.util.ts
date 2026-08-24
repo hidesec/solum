@@ -1,7 +1,15 @@
 import crypto from "crypto";
 
+const ALLOWED_JWT_ALGORITHMS = new Set(["HS256"]);
+
+export interface JwtVerifyOptions {
+    issuer?: string;
+    audience?: string;
+    clockToleranceSeconds?: number;
+}
+
 export function signJwt(payload: Record<string, unknown>, secret: string, expiresInSeconds: number): string {
-    const header = { alg: "HS256", typ: "JWT" };
+    const header = { alg: "HS256", typ: "JWT", iss: payload["iss"] as string | undefined };
     const iat = Math.floor(Date.now() / 1000);
     const body = { ...payload, iat, exp: iat + expiresInSeconds };
     const encodedHeader = Buffer.from(JSON.stringify(header)).toString("base64url");
@@ -11,11 +19,17 @@ export function signJwt(payload: Record<string, unknown>, secret: string, expire
     return `${data}.${signature}`;
 }
 
-export function verifyJwt<T extends object>(token: string, secret: string): T | null {
+export function verifyJwt<T extends object>(token: string, secret: string, options?: JwtVerifyOptions): T | null {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
 
     const [encodedHeader, encodedPayload, signature] = parts;
+
+    const headerRaw = JSON.parse(Buffer.from(encodedHeader, "base64url").toString("utf8"));
+    if (!headerRaw.alg || !ALLOWED_JWT_ALGORITHMS.has(headerRaw.alg)) {
+        return null;
+    }
+
     const expected = crypto.createHmac("sha256", secret).update(`${encodedHeader}.${encodedPayload}`).digest();
     let provided: Buffer;
     try {
@@ -29,8 +43,18 @@ export function verifyJwt<T extends object>(token: string, secret: string): T | 
     }
 
     try {
-        const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as T & { exp?: number };
+        const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as T & { exp?: number; iss?: string; aud?: string; nbf?: number };
         if (typeof payload.exp === "number" && payload.exp <= Math.floor(Date.now() / 1000)) {
+            return null;
+        }
+        const clockTolerance = options?.clockToleranceSeconds ?? 0;
+        if (typeof payload.nbf === "number" && payload.nbf > Math.floor(Date.now() / 1000) + clockTolerance) {
+            return null;
+        }
+        if (options?.issuer && payload.iss !== options.issuer) {
+            return null;
+        }
+        if (options?.audience && payload.aud !== options.audience) {
             return null;
         }
         return payload;
@@ -39,9 +63,18 @@ export function verifyJwt<T extends object>(token: string, secret: string): T | 
     }
 }
 
+const SCRYPT_KEY_LENGTH = 64;
+const SCRYPT_COST = 16384;
+const SCRYPT_BLOCK_SIZE = 8;
+const SCRYPT_PARALLELIZATION = 1;
+
 export function hashPassword(password: string): string {
     const salt = crypto.randomBytes(16);
-    const derived = crypto.scryptSync(password, salt, 64);
+    const derived = crypto.scryptSync(password, salt, SCRYPT_KEY_LENGTH, {
+        N: SCRYPT_COST,
+        r: SCRYPT_BLOCK_SIZE,
+        p: SCRYPT_PARALLELIZATION,
+    });
     return `scrypt:${salt.toString("hex")}:${derived.toString("hex")}`;
 }
 

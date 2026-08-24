@@ -1,4 +1,5 @@
-import { CookieOptions } from "./http-types";
+import crypto from "crypto";
+import { CookieOptions, SolumjsResponse } from "./http-types";
 
 export function parseCookies(header: string | string[] | undefined): Record<string, string> {
     const raw = Array.isArray(header) ? header.join("; ") : header;
@@ -40,4 +41,10 @@ export function serializeSetCookie(name: string, value: string, options: CookieO
     }
     parts.push(`SameSite=${options.sameSite ?? "Lax"}`);
     return parts.join("; ");
+}
+
+export function rotateSessionId(res: SolumjsResponse, options?: CookieOptions): string {
+    const newId = crypto.randomUUID();
+    res.setCookie("solum.sid", newId, { sameSite: "Lax", ...options });
+    return newId;
 }

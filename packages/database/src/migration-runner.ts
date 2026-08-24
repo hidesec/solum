@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { DatabaseDriver } from "@solumjs/orm";
 
 interface MigrationPair {
@@ -151,12 +152,16 @@ export class MigrationRunner {
 
   private async applyUp(migration: MigrationPair): Promise<void> {
     const sql = fs.readFileSync(migration.upPath, "utf-8");
+    const checksum = crypto.createHash("sha256").update(sql).digest("hex").slice(0, 16);
     try {
       await this.driver.transaction(async (tx) => {
         await tx.query(sql);
-        await tx.query(`INSERT INTO ${MIGRATIONS_TABLE} (name) VALUES ($1)`, [migration.name]);
+        await tx.query(
+          `INSERT INTO ${MIGRATIONS_TABLE} (name, checksum) VALUES ($1, $2)`,
+          [migration.name, checksum]
+        );
       });
-      console.log(`Applied: ${migration.name}`);
+      console.log(`Applied: ${migration.name} [${checksum}]`);
     } catch (err) {
       console.error(`Failed: ${migration.name}`);
       throw err;

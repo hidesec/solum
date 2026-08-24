@@ -20,4 +20,6 @@ export interface IJwtService {
     signAccessToken(claims: TokenClaims, expiresInSeconds?: number): string;
     signRefreshToken(claims: TokenClaims, expiresInSeconds?: number): string;
     verify(token: string): JwtPayload | null;
+    revoke(token: string): void;
+    isRevoked(jti: string): boolean;
 }

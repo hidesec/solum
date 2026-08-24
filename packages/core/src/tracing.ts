@@ -118,12 +118,18 @@ export async function trace<T>(name: string, fn: () => Promise<T>, attributes?: 
     }
 }
 
+const MAX_TRACE_ID_LENGTH = 128;
+const HEX_PATTERN = /^[0-9a-f]+$/;
+
 export function createTraceMiddleware() {
     const collectedSpans: TraceSpan[] = [];
 
     return {
         middleware(req: any, _res: any, next: () => void) {
-            const traceId = req.headers?.["x-trace-id"] || generateId();
+            const rawTraceId = req.headers?.["x-trace-id"];
+            const traceId = (typeof rawTraceId === "string" && rawTraceId.length <= MAX_TRACE_ID_LENGTH && HEX_PATTERN.test(rawTraceId))
+                ? rawTraceId
+                : generateId();
             const spanId = generateId().slice(0, 16);
 
             const span: TraceSpan = {

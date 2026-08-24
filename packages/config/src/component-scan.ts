@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 const EXCLUDED_DIRS = new Set(["database", "lang", "core", "__test__", "__tests__", "migrations"]);
+const ALLOWED_EXTENSIONS = new Set([".ts", ".js"]);
 
 export function componentScan(baseDir: string, dirs?: string[]): void {
     const targets = dirs ?? discoverSubdirs(baseDir);
@@ -31,10 +32,14 @@ function walk(dir: string): void {
             return;
         }
 
-        const isSourceFile = /\.(ts|js)$/.test(entry.name);
+        const ext = path.extname(entry.name);
+        if (!ALLOWED_EXTENSIONS.has(ext)) {
+            return;
+        }
+
         const isDeclarationOrTest = entry.name.endsWith(".d.ts") || entry.name.includes(".test.");
 
-        if (isSourceFile && !isDeclarationOrTest) {
+        if (!isDeclarationOrTest) {
             require(fullPath);
         }
     });

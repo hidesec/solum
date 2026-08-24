@@ -183,9 +183,13 @@ async function sendMailDirect(config: SmtpConfig, options: EmailOptions): Promis
 
                     if (config.auth) {
                         await sendSmtpCommand(tlsSocket, `STARTTLS\r\n`, 220);
+                        const rejectTls = config.tls?.rejectUnauthorized ?? true;
+                        if (!rejectTls) {
+                            console.warn("[SolumJS Email] WARNING: TLS certificate verification is disabled (rejectUnauthorized: false). This is insecure and vulnerable to MITM attacks. Only use in development.");
+                        }
                         const tlsOpts: tls.ConnectionOptions = {
                             host,
-                            rejectUnauthorized: config.tls?.rejectUnauthorized ?? true,
+                            rejectUnauthorized: rejectTls,
                         };
                         tlsSocket = tls.connect({ ...tlsOpts, socket } as any);
                         await new Promise<void>((res) => (tlsSocket as tls.TLSSocket).on("secure", res));
@@ -307,7 +311,11 @@ export class MailService {
     }
 
     getConfig(): SmtpConfig {
-        return { ...this.config };
+        const config = { ...this.config };
+        if (config.auth?.pass) {
+            config.auth = { ...config.auth, pass: "********" };
+        }
+        return config;
     }
 }
 
@@ -341,7 +349,9 @@ export class TemplateEngine {
     private interpolate(template: string, data: Record<string, unknown>): string {
         return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
             const value = data[key];
-            return value !== undefined ? String(value) : match;
+            if (value === undefined) return match;
+            const str = String(value);
+            return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#x27;" }[c] ?? c));
         });
     }
 

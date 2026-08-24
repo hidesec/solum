@@ -102,9 +102,13 @@ export async function createApplication(
 
     const docsOption = options.docs ?? true;
     if (docsOption !== false && process.env.NODE_ENV !== "test") {
-        const docsConfig: DocsOptions = docsOption === true ? {} : docsOption;
-        if (docsConfig.enabled !== false) {
-            mountOpenApi(adapter, docsConfig);
+        if (process.env.NODE_ENV === "production") {
+            logger.warn("OpenAPI docs disabled in production mode for security. Set docs.enabled: true to override.");
+        } else {
+            const docsConfig: DocsOptions = docsOption === true ? {} : docsOption;
+            if (docsConfig.enabled !== false) {
+                mountOpenApi(adapter, docsConfig);
+            }
         }
     }
 

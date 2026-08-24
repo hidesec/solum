@@ -44,7 +44,7 @@ export class RedisCacheStore implements CacheStore {
 
     async evict(prefix: string): Promise<void> {
         const pattern = `${KEY_PREFIX}${prefix}*`;
-        const keys = await this.client.keys(pattern);
+        const keys = await this.scanKeys(pattern);
         if (keys.length > 0) {
             await this.client.del(...keys);
         }
@@ -55,9 +55,23 @@ export class RedisCacheStore implements CacheStore {
     }
 
     async clear(): Promise<void> {
-        const keys = await this.client.keys(`${KEY_PREFIX}*`);
+        const keys = await this.scanKeys(`${KEY_PREFIX}*`);
         if (keys.length > 0) {
             await this.client.del(...keys);
         }
+    }
+
+    private async scanKeys(pattern: string): Promise<string[]> {
+        const allKeys: string[] = [];
+        const SCAN_COUNT = 100;
+        let cursor = 0;
+        do {
+            const result = await (this.client as any).scan(cursor, { MATCH: pattern, COUNT: SCAN_COUNT }) ?? { cursor: 0, keys: [] };
+            cursor = typeof result.cursor === "number" ? result.cursor : Number(result.cursor) || 0;
+            if (Array.isArray(result.keys)) {
+                allKeys.push(...result.keys);
+            }
+        } while (cursor !== 0);
+        return allKeys;
     }
 }

@@ -1,8 +1,37 @@
 import { IAuthService } from "@services/auth.service.interface";
-import { AutoWired } from "@solumjs/core";
-import { Body, Post, ResponseStatus, RestController, Valid } from "@solumjs/http";
+import { AutoWired, UnauthorizedException } from "@solumjs/core";
+import { Body, Post, ResponseStatus, RestController, SolumjsRequest, Req, Valid } from "@solumjs/http";
 import { LoginRequestDto } from "@dto/login.dto";
 import { RefreshTokenDto } from "@dto/refresh-token.dto";
+
+const loginAttempts = new Map<string, { count: number; resetAt: number; lockedUntil?: number }>();
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_LOCKOUT_MS = 30 * 60 * 1000;
+
+function checkLoginRateLimit(email: string): void {
+    const now = Date.now();
+    let bucket = loginAttempts.get(email);
+    if (!bucket || bucket.resetAt <= now) {
+        bucket = { count: 0, resetAt: now + LOGIN_WINDOW_MS };
+        loginAttempts.set(email, bucket);
+    }
+
+    if (bucket.lockedUntil && bucket.lockedUntil > now) {
+        const remainingSec = Math.ceil((bucket.lockedUntil - now) / 1000);
+        throw new UnauthorizedException(`Account locked. Try again in ${remainingSec} seconds.`);
+    }
+
+    bucket.count++;
+    if (bucket.count > LOGIN_MAX_ATTEMPTS) {
+        bucket.lockedUntil = now + LOGIN_LOCKOUT_MS;
+        throw new UnauthorizedException("Too many failed attempts. Account locked for 30 minutes.");
+    }
+}
+
+function recordLoginSuccess(email: string): void {
+    loginAttempts.delete(email);
+}
 
 @RestController("/auth")
 export class AuthController {
@@ -11,8 +40,17 @@ export class AuthController {
 
     @Post("/login")
     @ResponseStatus(200)
-    async login(@Valid() @Body() dto: LoginRequestDto) {
-        return this.authService.login(dto);
+    async login(@Valid() @Body() dto: LoginRequestDto, @Req() req: SolumjsRequest) {
+        checkLoginRateLimit(dto.email);
+        try {
+            const result = await this.authService.login(dto);
+            recordLoginSuccess(dto.email);
+            req.log.info({ email: dto.email }, "Login successful");
+            return result;
+        } catch (err) {
+            req.log.warn({ email: dto.email }, "Login failed");
+            throw err;
+        }
     }
 
     @Post("/refresh")

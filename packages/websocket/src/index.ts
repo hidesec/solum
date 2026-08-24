@@ -162,6 +162,11 @@ function parseFrame(buffer: Buffer): { opcode: number; payload: Buffer; length: 
 
 export function mountWebSocket(server: http.Server, handlers: Map<string, WsHandler>): void {
     server.on("upgrade", (req, socket, head) => {
+        if (!validateOrigin(req)) {
+            socket.destroy();
+            return;
+        }
+
         const url = new URL(req.url || "/", `http://${req.headers.host}`);
         let matchedHandler: WsHandler | undefined;
         let matchedPath: string | undefined;
@@ -289,6 +294,32 @@ export function StompHandler(): ClassDecorator {
     };
 }
 
+const HTML_ESCAPE_MAP: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+};
+
+function sanitizeStompBody(body: string): string {
+    return body.replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char] ?? char);
+}
+
+function validateOrigin(req: http.IncomingMessage): boolean {
+    const origin = req.headers.origin;
+    if (!origin) return true;
+    try {
+        const originUrl = new URL(origin);
+        const host = req.headers.host;
+        if (host && originUrl.host === host) return true;
+        if (process.env.NODE_ENV === "development") return true;
+        return false;
+    } catch {
+        return false;
+    }
+}
+
 export function createStompHandler(instance: any): WsHandler {
     const handlers = getStompHandlers(instance.constructor);
 
@@ -341,9 +372,10 @@ export function createStompHandler(instance: any): WsHandler {
 
                             const subscribers = STOMP_SUBSCRIPTIONS.get(dest);
                             if (subscribers) {
+                                const sanitized = sanitizeStompBody(frame.body);
                                 for (const sub of subscribers) {
                                     if (sub.id !== client.id) {
-                                        sub.send(serializeStompFrame("MESSAGE", { destination: dest }, frame.body));
+                                        sub.send(serializeStompFrame("MESSAGE", { destination: dest }, sanitized));
                                     }
                                 }
                             }

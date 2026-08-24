@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/schedule",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "SolumJS scheduler: cron-based task scheduling with @Scheduled",
   "license": "MIT",
   "main": "dist/index.js",

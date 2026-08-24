@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/orm",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "SolumJS ORM: entity metadata, query builder, multi-dialect SQL, transactions",
   "license": "MIT",
   "main": "dist/index.js",

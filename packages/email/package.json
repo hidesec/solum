@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/email",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "SolumJS Email/SMTP support",
   "license": "MIT",
   "main": "dist/index.js",

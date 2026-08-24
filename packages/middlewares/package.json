@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/middlewares",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "SolumJS middlewares: security headers, CORS, rate limit, logging, error handling",
   "license": "MIT",
   "main": "dist/index.js",

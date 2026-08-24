@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/testing",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "SolumJS testing utilities: MockMvc, createTestApplication, mock helpers",
   "license": "MIT",
   "main": "dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/aop",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "SolumJS AOP: method interceptors, execution logging, audit trail decorators",
   "license": "MIT",
   "main": "dist/index.js",

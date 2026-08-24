@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/events",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "SolumJS events: in-process event bus with @EventListener",
   "license": "MIT",
   "main": "dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "solumjs",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "private": true,
   "workspaces": [
     "packages/*"

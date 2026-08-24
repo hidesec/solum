@@ -176,12 +176,13 @@ const MAX_WS_BUFFER_SIZE = 256 * 1024;
 let wsConnectionCount = 0;
 
 function timingSafeEqual(a: string, b: string): boolean {
-    if (a.length !== b.length) return false;
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) {
+        crypto.timingSafeEqual(bufA, Buffer.alloc(bufA.length));
+        return false;
     }
-    return result === 0;
+    return crypto.timingSafeEqual(bufA, bufB);
 }
 
 export function mountWebSocket(server: http.Server, handlers: Map<string, WsHandler>, options: WebSocketOptions = {}): void {

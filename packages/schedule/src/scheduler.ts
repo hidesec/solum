@@ -223,6 +223,6 @@ export function startScheduledTasks(): void {
 }
 
 export function stopScheduledTasks(): void {
-    timers.forEach((timer) => clearInterval(timer));
+    timers.forEach((timer) => clearTimeout(timer));
     timers.length = 0;
 }

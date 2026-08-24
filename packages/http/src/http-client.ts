@@ -170,6 +170,7 @@ function isPrivateIP(ip: string): boolean {
     const clean = ip.replace(/^\[|]$/g, "").toLowerCase();
     if (clean === "127.0.0.1" || clean === "::1" || clean === "0.0.0.0") return true;
     if (clean === "localhost") return true;
+    if (clean.startsWith("fe80:")) return true;
     const parts = clean.split(".");
     if (parts.length === 4) {
         const [a, b] = parts.map(Number);

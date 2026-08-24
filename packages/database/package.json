@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/database",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "SolumJS database: multi-driver connections, repositories, migrations",
   "license": "MIT",
   "main": "dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/cache",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "SolumJS cache: Cacheable/CacheEvict decorators with in-memory or Redis backend",
   "license": "MIT",
   "main": "dist/index.js",

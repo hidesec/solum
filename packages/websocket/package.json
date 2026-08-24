@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/websocket",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "SolumJS WebSocket support with decorator-based handlers",
   "license": "MIT",
   "main": "dist/index.js",

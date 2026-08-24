@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/http",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "SolumJS HTTP abstraction, router and Node.js adapter",
   "license": "MIT",
   "main": "dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/auth",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "SolumJS auth: JWT service, password hashing, guards, RBAC roles",
   "license": "MIT",
   "main": "dist/index.js",

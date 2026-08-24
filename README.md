@@ -1,5 +1,10 @@
 # SolumJS
 
+[![npm version](https://img.shields.io/npm/v/@solumjs/core.svg)](https://www.npmjs.com/package/@solumjs/core)
+[![npm downloads](https://img.shields.io/npm/dm/@solumjs/core.svg)](https://www.npmjs.com/package/@solumjs/core)
+[![license](https://img.shields.io/npm/l/@solumjs/core.svg)](https://github.com/hidesec/backend-example/blob/main/LICENSE)
+[![node](https://img.shields.io/node/v/@solumjs/core.svg)](https://nodejs.org)
+
 **A modular, decorator-driven backend framework for Node.js and TypeScript**
 
 SolumJS is a full-stack backend framework that brings the simplicity and convention of Spring Boot to the Node.js ecosystem. Built entirely from scratch with **zero runtime dependencies in core**, it provides a complete toolchain for building production-ready APIs, from dependency injection to database management.
@@ -9,6 +14,7 @@ SolumJS is a full-stack backend framework that brings the simplicity and convent
 ## Table of Contents
 
 - [Features](#features)
+- [Quick Install](#quick-install)
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
 - [Packages](#packages)
@@ -98,6 +104,44 @@ SolumJS is a full-stack backend framework that brings the simplicity and convent
 - **CLI** — `solum new` and `solum generate` commands
 - **Testing** — `createTestApplication()`, `@MockBean`, `MockLogger`, MockMvc-like assertions
 - **Hot Reload** — `ts-node-dev` integration for development
+
+---
+
+## Quick Install
+
+```bash
+# Quick start with CLI
+npx @solumjs/cli new my-app
+
+# Or install individually
+npm install @solumjs/core @solumjs/http @solumjs/config @solumjs/orm @solumjs/database
+
+# Add optional packages
+npm install @solumjs/auth @solumjs/cache @solumjs/events @solumjs/schedule
+npm install @solumjs/validation @solumjs/middlewares @solumjs/aop @solumjs/testing
+npm install @solumjs/websocket @solumjs/email
+```
+
+**Available packages:**
+
+| Package | Install | Description |
+|---------|---------|-------------|
+| `@solumjs/core` | `npm i @solumjs/core` | DI container, decorators, HTTP exceptions |
+| `@solumjs/http` | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors |
+| `@solumjs/aop` | `npm i @solumjs/aop` | Aspect-Oriented Programming |
+| `@solumjs/orm` | `npm i @solumjs/orm` | Entity/column decorators, query builder |
+| `@solumjs/database` | `npm i @solumjs/database` | Repository, migrations, transactions |
+| `@solumjs/cache` | `npm i @solumjs/cache` | `@Cacheable`, `@CacheEvict`, `@CachePut` |
+| `@solumjs/auth` | `npm i @solumjs/auth` | JWT, passwords, guards, OAuth2 |
+| `@solumjs/events` | `npm i @solumjs/events` | `EventBus`, `@EventListener` |
+| `@solumjs/schedule` | `npm i @solumjs/schedule` | `@Scheduled` with cron support |
+| `@solumjs/config` | `npm i @solumjs/config` | Bootstrap, `.env` loading, `@Value` |
+| `@solumjs/validation` | `npm i @solumjs/validation` | 20+ validation decorators |
+| `@solumjs/middlewares` | `npm i @solumjs/middlewares` | Security, CORS, rate limiting |
+| `@solumjs/testing` | `npm i @solumjs/testing` | `createTestApplication()`, `@MockBean` |
+| `@solumjs/websocket` | `npm i @solumjs/websocket` | WebSocket handlers, STOMP protocol |
+| `@solumjs/email` | `npm i @solumjs/email` | SMTP email, templates |
+| `@solumjs/cli` | `npm i -g @solumjs/cli` | `solum new`, `solum generate` |
 
 ---
 
@@ -239,25 +283,25 @@ npm run dev
 
 SolumJS is organized as a monorepo with 16 modular packages:
 
-| Package | npm | Description |
-|---------|-----|-------------|
-| [`core`](#core) | `@solumjs/core` | DI container, decorators, HTTP exceptions, resilience, metrics, tracing, i18n, batch, discovery |
-| [`http`](#http) | `@solumjs/http` | Router, REST decorators, guards, interceptors, Node.js adapter, HTTP clients |
-| [`aop`](#aop) | `@solumjs/aop` | Aspect-Oriented Programming: aspects, pointcuts, advice |
-| [`orm`](#orm) | `@solumjs/orm` | Entity/column decorators, query builder, schema builder, dialect abstraction |
-| [`database`](#database) | `@solumjs/database` | `BaseRepository`, `@Transactional`, migrations, driver factory |
-| [`cache`](#cache) | `@solumjs/cache` | `@Cacheable`, `@CacheEvict`, `@CachePut`, InMemory/Redis stores |
-| [`auth`](#auth) | `@solumjs/auth` | JWT, passwords, guards, `@PreAuthorize`, OAuth2 |
-| [`events`](#events) | `@solumjs/events` | `EventBus`, `@EventListener`, transactional listeners |
-| [`schedule`](#schedule) | `@solumjs/schedule` | `@Scheduled` with cron/interval support |
-| [`config`](#config) | `@solumjs/config` | `createApplication()`, `.env`/YAML loading, `@Value`, OpenAPI, actuator |
-| [`validation`](#validation) | `@solumjs/validation` | 20+ validation decorators, whitelist/blacklist modes |
-| [`middlewares`](#middlewares) | `@solumjs/middlewares` | Security, CORS, rate limiting, error handling, `@ControllerAdvice` |
-| [`testing`](#testing) | `@solumjs/testing` | `createTestApplication()`, `@MockBean`, `MockLogger` |
-| [`websocket`](#websocket) | `@solumjs/websocket` | WebSocket handlers, STOMP protocol, `@MessageMapping` |
-| [`email`](#email) | `@solumjs/email` | SMTP email, `@SmtpEmail`, `@MailSend`, template engine |
-| [`cli`](#cli) | `@solumjs/cli` | `solum new`, `solum generate` scaffolding commands |
-| [`backend-example`](#backend-example) | — | Reference implementation demonstrating all features |
+| Package | npm | Install | Description |
+|---------|-----|---------|-------------|
+| [`core`](#core) | [`@solumjs/core`](https://www.npmjs.com/package/@solumjs/core) | `npm i @solumjs/core` | DI container, decorators, HTTP exceptions, resilience, metrics, tracing, i18n, batch, discovery |
+| [`http`](#http) | [`@solumjs/http`](https://www.npmjs.com/package/@solumjs/http) | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors, Node.js adapter, HTTP clients |
+| [`aop`](#aop) | [`@solumjs/aop`](https://www.npmjs.com/package/@solumjs/aop) | `npm i @solumjs/aop` | Aspect-Oriented Programming: aspects, pointcuts, advice |
+| [`orm`](#orm) | [`@solumjs/orm`](https://www.npmjs.com/package/@solumjs/orm) | `npm i @solumjs/orm` | Entity/column decorators, query builder, schema builder, dialect abstraction |
+| [`database`](#database) | [`@solumjs/database`](https://www.npmjs.com/package/@solumjs/database) | `npm i @solumjs/database` | `BaseRepository`, `@Transactional`, migrations, driver factory |
+| [`cache`](#cache) | [`@solumjs/cache`](https://www.npmjs.com/package/@solumjs/cache) | `npm i @solumjs/cache` | `@Cacheable`, `@CacheEvict`, `@CachePut`, InMemory/Redis stores |
+| [`auth`](#auth) | [`@solumjs/auth`](https://www.npmjs.com/package/@solumjs/auth) | `npm i @solumjs/auth` | JWT, passwords, guards, `@PreAuthorize`, OAuth2 |
+| [`events`](#events) | [`@solumjs/events`](https://www.npmjs.com/package/@solumjs/events) | `npm i @solumjs/events` | `EventBus`, `@EventListener`, transactional listeners |
+| [`schedule`](#schedule) | [`@solumjs/schedule`](https://www.npmjs.com/package/@solumjs/schedule) | `npm i @solumjs/schedule` | `@Scheduled` with cron/interval support |
+| [`config`](#config) | [`@solumjs/config`](https://www.npmjs.com/package/@solumjs/config) | `npm i @solumjs/config` | `createApplication()`, `.env`/YAML loading, `@Value`, OpenAPI, actuator |
+| [`validation`](#validation) | [`@solumjs/validation`](https://www.npmjs.com/package/@solumjs/validation) | `npm i @solumjs/validation` | 20+ validation decorators, whitelist/blacklist modes |
+| [`middlewares`](#middlewares) | [`@solumjs/middlewares`](https://www.npmjs.com/package/@solumjs/middlewares) | `npm i @solumjs/middlewares` | Security, CORS, rate limiting, error handling, `@ControllerAdvice` |
+| [`testing`](#testing) | [`@solumjs/testing`](https://www.npmjs.com/package/@solumjs/testing) | `npm i @solumjs/testing` | `createTestApplication()`, `@MockBean`, `MockLogger` |
+| [`websocket`](#websocket) | [`@solumjs/websocket`](https://www.npmjs.com/package/@solumjs/websocket) | `npm i @solumjs/websocket` | WebSocket handlers, STOMP protocol, `@MessageMapping` |
+| [`email`](#email) | [`@solumjs/email`](https://www.npmjs.com/package/@solumjs/email) | `npm i @solumjs/email` | SMTP email, `@SmtpEmail`, `@MailSend`, template engine |
+| [`cli`](#cli) | [`@solumjs/cli`](https://www.npmjs.com/package/@solumjs/cli) | `npm i -g @solumjs/cli` | `solum new`, `solum generate` scaffolding commands |
+| [`backend-example`](#backend-example) | — | — | Reference implementation demonstrating all features |
 
 ---
 

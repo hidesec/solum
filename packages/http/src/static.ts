@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, statSync } from "fs";
+import { createReadStream, existsSync, lstatSync, statSync } from "fs";
 import path from "path";
 import { SolumjsMiddleware } from "./http-types";
 
@@ -75,6 +75,15 @@ export function serveStatic(rootDir: string, options: StaticOptions = {}): Solum
 
         let stats;
         try {
+            const linkStats = lstatSync(target);
+            if (linkStats.isSymbolicLink()) {
+                if (fallthrough) {
+                    next();
+                    return;
+                }
+                res.status(403).json({ status: "error", message: "Forbidden" });
+                return;
+            }
             stats = statSync(target);
         } catch {
             if (fallthrough) {

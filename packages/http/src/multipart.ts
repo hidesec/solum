@@ -60,18 +60,23 @@ export function parseMultipart(buffer: Buffer, boundary: string): MultipartResul
 const CRLF = Buffer.from("\r\n");
 const DOUBLE_CRLF = Buffer.from("\r\n\r\n");
 
+function sanitizeFilename(filename: string): string {
+    const base = filename.split(/[/\\]/).pop() ?? filename;
+    return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 255);
+}
+
 function applyPart(result: MultipartResult, headerBlock: string, body: Buffer): void {
     const headers = parsePartHeaders(headerBlock);
     const disposition = headers["content-disposition"] ?? "";
     const name = /name="((?:[^"\\]|\\.)*)"/.exec(disposition)?.[1];
-    const filename = /filename="((?:[^"\\]|\\.)*)"/.exec(disposition)?.[1];
+    const rawFilename = /filename="((?:[^"\\]|\\.)*)"/.exec(disposition)?.[1];
 
     if (!name) return;
 
-    if (filename !== undefined) {
+    if (rawFilename !== undefined) {
         result.files.push({
             fieldname: name,
-            filename: filename,
+            filename: sanitizeFilename(rawFilename),
             encoding: (headers["content-transfer-encoding"] ?? "binary").trim(),
             mimeType: (headers["content-type"] ?? "application/octet-stream").split(";")[0].trim(),
             buffer: Buffer.from(body),

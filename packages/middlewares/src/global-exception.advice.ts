@@ -11,12 +11,21 @@ import {
     UnauthorizedException,
 } from "@solumjs/core";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+function safeMessage(err: HttpException): string {
+    if (isProduction && err.statusCode >= 500) {
+        return "Internal Server Error";
+    }
+    return err.message;
+}
+
 @ControllerAdvice()
 export class GlobalExceptionAdvice {
     @ExceptionHandler(NotFoundException)
     handleNotFound(err: NotFoundException, req: SolumjsRequest) {
         getFrameworkLogger().warn({ path: req.path, statusCode: err.statusCode }, err.message);
-        return { status: "error", code: "NOT_FOUND", message: err.message };
+        return { status: "error", code: "NOT_FOUND", message: isProduction ? "Resource not found" : err.message };
     }
 
     @ExceptionHandler(BadRequestException)
@@ -34,7 +43,7 @@ export class GlobalExceptionAdvice {
     @ExceptionHandler(ServiceUnavailableException)
     handleServiceUnavailable(err: ServiceUnavailableException, req: SolumjsRequest) {
         getFrameworkLogger().warn({ path: req.path, statusCode: err.statusCode }, err.message);
-        return { status: "error", code: "SERVICE_UNAVAILABLE", message: err.message };
+        return { status: "error", code: "SERVICE_UNAVAILABLE", message: safeMessage(err) };
     }
 
     @ExceptionHandler(UnauthorizedException)
@@ -52,6 +61,6 @@ export class GlobalExceptionAdvice {
     @ExceptionHandler(HttpException)
     handleHttpException(err: HttpException, req: SolumjsRequest) {
         getFrameworkLogger().warn({ path: req.path, statusCode: err.statusCode }, err.message);
-        return { status: "error", message: err.message };
+        return { status: "error", message: safeMessage(err) };
     }
 }

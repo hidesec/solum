@@ -1,6 +1,7 @@
 import os from "os";
 import { HttpAdapter } from "@solumjs/http";
 import { getDatabaseDriver } from "@solumjs/orm";
+import { getFrameworkLogger } from "@solumjs/core";
 
 export interface ActuatorOptions {
     basePath?: string;
@@ -81,6 +82,10 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
     const basePath = options.basePath ?? "/actuator";
     const healthchecks: HealthCheck[] = options.healthchecks ?? [];
     const authGuard = options.authGuard;
+
+    if (!authGuard) {
+        getFrameworkLogger().warn("Actuator endpoints have no authGuard configured. All actuator endpoints are publicly accessible. Set options.authGuard to protect them.");
+    }
 
     const protectedHandler = (handler: (req: any, res: any) => void | Promise<void>) => (req: any, res: any) => {
         if (authGuard && !authGuard(req, res)) {

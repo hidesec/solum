@@ -31,8 +31,9 @@ export function createOAuth2Routes(options: OAuth2GuardOptions): OAuth2RouteHand
                     return;
                 }
 
-                if (!provider.validateState(state)) {
-                    res.status(400).json({ error: "Invalid state parameter" });
+                const stateData = provider.consumeState(state);
+                if (!stateData) {
+                    res.status(400).json({ error: "Invalid or expired state parameter" });
                     return;
                 }
 
@@ -47,7 +48,11 @@ export function createOAuth2Routes(options: OAuth2GuardOptions): OAuth2RouteHand
                         res.status(200).json(result.json);
                     }
                 } else {
-                    res.status(200).json({ user: userInfo, token: tokenResponse });
+                    res.status(200).json({
+                        user: userInfo,
+                        accessToken: tokenResponse.access_token,
+                        tokenType: tokenResponse.token_type,
+                    });
                 }
             } catch (error) {
                 if (options.onFailure) {

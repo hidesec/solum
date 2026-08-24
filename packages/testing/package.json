@@ -23,5 +23,16 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^26.2.0",
     "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hidesec/backend-example.git",
+    "directory": "packages/testing"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

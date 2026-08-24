@@ -47,5 +47,16 @@
     "typescript": "^6.0.3",
     "pg": "^8.23.0",
     "mysql2": "^3.23.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hidesec/backend-example.git",
+    "directory": "packages/database"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

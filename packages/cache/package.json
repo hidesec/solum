@@ -28,5 +28,16 @@
     "@types/node": "^26.2.0",
     "typescript": "^6.0.3",
     "redis": "^6.2.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hidesec/backend-example.git",
+    "directory": "packages/cache"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

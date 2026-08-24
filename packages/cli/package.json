@@ -9,8 +9,7 @@
     "solum": "bin/solum"
   },
   "files": [
-    "dist",
-    "bin"
+    "dist"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -19,5 +18,16 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hidesec/backend-example.git",
+    "directory": "packages/cli"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

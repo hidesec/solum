@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/cache",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "SolumJS cache: Cacheable/CacheEvict decorators with in-memory or Redis backend",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,8 +14,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.0",
-    "@solumjs/aop": "^0.2.0"
+    "@solumjs/core": "^0.2.1",
+    "@solumjs/aop": "^0.2.1"
   },
   "peerDependencies": {
     "redis": "^6.2.1"

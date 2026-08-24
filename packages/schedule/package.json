@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/schedule",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "SolumJS scheduler: cron-based task scheduling with @Scheduled",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.0"
+    "@solumjs/core": "^0.2.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

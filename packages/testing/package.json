@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/testing",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "SolumJS testing utilities: MockMvc, createTestApplication, mock helpers",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,10 +14,10 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.0",
-    "@solumjs/http": "^0.2.0",
-    "@solumjs/config": "^0.2.0",
-    "@solumjs/orm": "^0.2.0"
+    "@solumjs/core": "^0.2.1",
+    "@solumjs/http": "^0.2.1",
+    "@solumjs/config": "^0.2.1",
+    "@solumjs/orm": "^0.2.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

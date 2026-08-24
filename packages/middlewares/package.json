@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/middlewares",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "SolumJS middlewares: security headers, CORS, rate limit, logging, error handling",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,8 +14,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.0",
-    "@solumjs/http": "^0.2.0"
+    "@solumjs/core": "^0.2.1",
+    "@solumjs/http": "^0.2.1"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/database",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "SolumJS database: multi-driver connections, repositories, migrations",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,9 +14,9 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.0",
-    "@solumjs/orm": "^0.2.0",
-    "@solumjs/http": "^0.2.0"
+    "@solumjs/core": "^0.2.1",
+    "@solumjs/orm": "^0.2.1",
+    "@solumjs/http": "^0.2.1"
   },
   "peerDependencies": {
     "pg": "^8.23.0",

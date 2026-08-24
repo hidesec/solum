@@ -7,7 +7,7 @@
 
 **A modular, decorator-driven backend framework for Node.js and TypeScript**
 
-SolumJS is a full-stack backend framework that brings the simplicity and convention of Spring Boot to the Node.js ecosystem. Built entirely from scratch with **zero runtime dependencies in core**, it provides a complete toolchain for building production-ready APIs, from dependency injection to database management.
+SolumJS is a full-stack backend framework inspired by Spring Boot, built entirely from scratch with **zero runtime dependencies in core**. It provides a complete toolchain for building production-ready APIs.
 
 ---
 
@@ -15,182 +15,96 @@ SolumJS is a full-stack backend framework that brings the simplicity and convent
 
 - [Features](#features)
 - [Quick Install](#quick-install)
-- [Architecture](#architecture)
+- [Packages](#packages)
 - [Getting Started](#getting-started)
 - [Migration Guide](docs/migration-guide.md)
-- [Packages](#packages)
 - [Core Concepts](#core-concepts)
-  - [Dependency Injection](#dependency-injection)
-  - [Decorators](#decorators)
-  - [HTTP Layer](#http-layer)
-  - [ORM & Database](#orm--database)
-  - [Authentication & Authorization](#authentication--authorization)
-  - [Caching](#caching)
-  - [Events](#events)
-  - [Scheduling](#scheduling)
-  - [Validation](#validation)
-  - [AOP (Aspect-Oriented Programming)](#aop-aspect-oriented-programming)
-  - [Error Handling](#error-handling)
-  - [Testing](#testing)
-  - [WebSocket](#websocket)
-  - [Email](#email)
-  - [Configuration](#configuration)
-  - [CLI](#cli)
+  - [@solumjs/core](#solumjscore)
+  - [@solumjs/http](#solumjshttp)
+  - [@solumjs/config](#solumjsconfig)
+  - [@solumjs/orm](#solumjsorm)
+  - [@solumjs/database](#solumjsdatabase)
+  - [@solumjs/auth](#solumjsauth)
+  - [@solumjs/cache](#solumjscache)
+  - [@solumjs/events](#solumjsevents)
+  - [@solumjs/schedule](#solumjsschedule)
+  - [@solumjs/validation](#solumjsvalidation)
+  - [@solumjs/aop](#solumjsaop)
+  - [@solumjs/middlewares](#solumjsmiddlewares)
+  - [@solumjs/testing](#solumjstesting)
+  - [@solumjs/websocket](#solumjswebsocket)
+  - [@solumjs/email](#solumjsemail)
+  - [@solumjs/cli](#solumjscli)
 - [Example Application](#example-application)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
 
 ## Features
 
-### Core Framework
-- **Dependency Injection** — Full IoC container with singleton, prototype, request, and session scopes
+- **Dependency Injection** — Full IoC container with singleton, prototype, and request scopes
 - **Decorator-Driven** — 90+ decorators for routing, validation, caching, auth, and more
 - **Zero Core Dependencies** — Framework core uses only Node.js built-ins
 - **TypeScript Native** — First-class TypeScript support with full type inference
-
-### HTTP Layer
-- **REST API** — Declarative route definitions with `@Get`, `@Post`, `@Put`, `@Patch`, `@Delete`
-- **Parameter Binding** — `@Body`, `@Param`, `@Query`, `@Header`, `@CookieValue`, `@CurrentUser`
-- **Guards & Interceptors** — `@UseGuards`, `@UseInterceptors` for cross-cutting concerns
-- **Declarative HTTP Clients** — `@HttpClient`, `@HttpGet`, `@HttpPost` for external API calls
-- **Pagination** — Built-in `PageRequest` and `Page<T>` model with cursor support
-- **OpenAPI/Swagger** — Auto-generated API documentation
-
-### Data Layer
-- **ORM** — Entity decorators (`@Entity`, `@Column`, `@ManyToOne`, `@OneToMany`, etc.)
-- **Query Builder** — Fluent SQL builder with joins, pagination, and multi-dialect support
-- **Multi-Database** — PostgreSQL, MySQL, SQLite, MSSQL, Oracle, MongoDB
-- **Migrations** — File-based migration runner with status tracking
-- **Schema Sync** — Drift detection and automatic schema updates
-- **Repositories** — Generic `BaseRepository<T, ID>` with CRUD, derived queries, and transactions
-- **Optimistic Locking** — Version-based conflict detection
-
-### Security
-- **JWT Authentication** — `JwtAuthGuard` with access/refresh token flow
-- **Role-Based Access** — `RolesGuard` and `@Roles` decorator
-- **Method-Level Security** — `@PreAuthorize` with SpEL-like expressions
-- **OAuth2** — OAuth2 client and guard integration
-- **Password Hashing** — Built-in scrypt-based password hashing
-- **Security Headers** — Configurable security middleware (CSP, HSTS, etc.)
-- **Rate Limiting** — Per-IP and per-route rate limiting
-- **CORS** — Full CORS configuration
-
-### Resilience
-- **Circuit Breaker** — `@CircuitBreakerDec` with configurable thresholds
-- **Retry** — `@Retry` with exponential backoff
-- **Timeouts** — Per-route timeout configuration
-- **Fallback** — `@Fallback` for graceful degradation
-- **Bulkhead** — Concurrency limiting
-
-### Cross-Cutting Concerns
-- **Caching** — `@Cacheable`, `@CacheEvict`, `@CachePut` with InMemory and Redis stores
-- **Events** — `EventBus`, `@EventListener`, `@TransactionalEventListener`
-- **Scheduling** — `@Scheduled` with cron expressions and interval notation
-- **Validation** — 20+ validation decorators with whitelist/blacklist modes
-- **AOP** — `@Aspect`, `@Around`, `@Before`, `@After`, `@AfterReturning`, `@AfterThrowing`
-- **Logging** — Configurable logger with structured output
-- **Metrics** — Prometheus-compatible metrics registry
-- **Tracing** — Built-in request tracing with trace IDs
-- **I18n** — Internationalization with resource bundles
-
-### Operations
-- **Actuator** — Health checks, metrics endpoints, config introspection
-- **Batch Processing** — `Job` and `Step` abstractions for batch workflows
-- **Service Discovery** — `DiscoveryClient` for microservices
-- **Configuration Server** — `ConfigServer` and `ConfigClient` for distributed config
-
-### Development
-- **CLI** — `solum new` and `solum generate` commands
-- **Testing** — `createTestApplication()`, `@MockBean`, `MockLogger`, MockMvc-like assertions
-- **Hot Reload** — `ts-node-dev` integration for development
+- **REST API** — Declarative routes with `@Get`, `@Post`, `@Put`, `@Patch`, `@Delete`
+- **ORM** — Entity decorators, query builder, 5 database dialects
+- **JWT Auth** — `JwtAuthGuard`, `RolesGuard`, `@PreAuthorize`, OAuth2
+- **Caching** — `@Cacheable`, `@CacheEvict`, `@CachePut` with InMemory store
+- **Events** — `EventBus`, `@EventListener`, transactional listeners
+- **Scheduling** — `@Scheduled` with cron expressions and intervals
+- **Validation** — 20+ validation decorators
+- **AOP** — `@Aspect`, `@Around`, `@Before`, `@After`, `@LogExecution`
+- **WebSocket** — WebSocket handlers and STOMP protocol
+- **Email** — SMTP client with template engine
 
 ---
 
 ## Quick Install
 
 ```bash
-# Install everything at once
+# Install everything
 npm install solumjs
 
-# Then create a project
+# Create a project
 npx solum new my-app
 cd my-app
 npm run dev
 ```
 
 **Or install individually:**
+
 ```bash
-npm install @solumjs/core @solumjs/http @solumjs/config @solumjs/orm @solumjs/database
-npm install @solumjs/auth @solumjs/cache @solumjs/events @solumjs/schedule
-npm install @solumjs/validation @solumjs/middlewares @solumjs/aop @solumjs/testing
+npm install @solumjs/core @solumjs/http @solumjs/config
+npm install @solumjs/orm @solumjs/database
+npm install @solumjs/auth @solumjs/cache @solumjs/events
+npm install @solumjs/schedule @solumjs/validation
+npm install @solumjs/middlewares @solumjs/aop
 npm install @solumjs/websocket @solumjs/email
 ```
 
-**Available packages:**
+---
+
+## Packages
 
 | Package | Install | Description |
 |---------|---------|-------------|
-| `solumjs` | `npm i solumjs` | Install all packages + CLI |
-| `@solumjs/core` | `npm i @solumjs/core` | DI container, decorators, HTTP exceptions |
-| `@solumjs/http` | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors |
-| `@solumjs/aop` | `npm i @solumjs/aop` | Aspect-Oriented Programming |
-| `@solumjs/orm` | `npm i @solumjs/orm` | Entity/column decorators, query builder |
-| `@solumjs/database` | `npm i @solumjs/database` | Repository, migrations, transactions |
-| `@solumjs/cache` | `npm i @solumjs/cache` | `@Cacheable`, `@CacheEvict`, `@CachePut` |
-| `@solumjs/auth` | `npm i @solumjs/auth` | JWT, passwords, guards, OAuth2 |
-| `@solumjs/events` | `npm i @solumjs/events` | `EventBus`, `@EventListener` |
-| `@solumjs/schedule` | `npm i @solumjs/schedule` | `@Scheduled` with cron support |
-| `@solumjs/config` | `npm i @solumjs/config` | Bootstrap, `.env` loading, `@Value` |
-| `@solumjs/validation` | `npm i @solumjs/validation` | 20+ validation decorators |
-| `@solumjs/middlewares` | `npm i @solumjs/middlewares` | Security, CORS, rate limiting |
-| `@solumjs/testing` | `npm i @solumjs/testing` | `createTestApplication()`, `@MockBean` |
-| `@solumjs/websocket` | `npm i @solumjs/websocket` | WebSocket handlers, STOMP protocol |
-| `@solumjs/email` | `npm i @solumjs/email` | SMTP email, templates |
-| `@solumjs/cli` | `npm i -g @solumjs/cli` | `solum new`, `solum generate` |
-
----
-
-## Architecture
-
-```
-+-------------------------------------------------------------------+
-|                        Application Layer                           |
-|  +--------------+  +--------------+  +-------------+  +----------+ |
-|  |  Controllers  |  |   Services   |  |  Listeners  |  | Schedule | |
-|  +------+-------+  +------+-------+  +------+------+  +----+-----+ |
-|         |                |                 |               |       |
-+---------+----------------+-----------------+---------------+-------+
-|                        Cross-Cutting Layer                          |
-|  +----+-------+--------+----------+--------+---------+-----------+ |
-|  |  Guards  | Interceptors |    AOP     | Validation |   Caching   | |
-|  +----------+--------------+-----------+------------+-------------+ |
-|                          |                                           |
-+--------------------------+-------------------------------------------+
-|                        Infrastructure Layer                          |
-|  +------------+    +-----------+    +----------+    +-------------+  |
-|  |    ORM     |    |   HTTP    |    |  Events  |    |   Cache     |  |
-|  | QueryBldr  |    |  Adapter  |    |  (Bus)   |    | (InMemory)  |  |
-|  +------+-----+    +-----------+    +----------+    +-------------+  |
-|         |                                                              |
-+---------+--------------------------------------------------------------+
-|                        Database Layer                                  |
-|  +------------------------------------------------------------------+ |
-|  |  PostgreSQL  |  MySQL  |  SQLite  |  MSSQL  |  Oracle  | MongoDB | |
-|  +------------------------------------------------------------------+ |
-+------------------------------------------------------------------------+
-```
-
-### Layered Architecture
-
-1. **Core** — IoC container, decorator metadata, reflect-metadata polyfill
-2. **HTTP** — Router, decorators, guards, interceptors, Node.js adapter
-3. **ORM** — Entity management, query builder, schema builder, dialect abstraction
-4. **Database** — Repositories, migrations, driver factory, transaction management
-5. **Feature Packages** — Auth, Cache, Events, Schedule, Validation, AOP, Middlewares
-6. **Config** — Application bootstrap, component scanning, environment loading
-7. **Testing** — Mock utilities, test application factory
+| `solumjs` | `npm i solumjs` | Meta package — installs all + CLI |
+| `@solumjs/core` | `npm i @solumjs/core` | IoC container, decorators, HTTP exceptions, resilience, metrics, tracing, i18n, batch, discovery, logger |
+| `@solumjs/http` | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors, pagination, session, HTTP clients, static files |
+| `@solumjs/config` | `npm i @solumjs/config` | `createApplication()`, `.env`/YAML loading, `@Value`, OpenAPI/Swagger, actuator endpoints |
+| `@solumjs/orm` | `npm i @solumjs/orm` | Entity/column decorators, query builder, relations, schema builder, 5 database dialects |
+| `@solumjs/database` | `npm i @solumjs/database` | `BaseRepository`, `@Transactional`, migrations, driver factory |
+| `@solumjs/auth` | `npm i @solumjs/auth` | JWT service, `JwtAuthGuard`, `RolesGuard`, `@PreAuthorize`, OAuth2 |
+| `@solumjs/cache` | `npm i @solumjs/cache` | `@Cacheable`, `@CacheEvict`, `@CachePut`, InMemory store, `resolveCacheKey` |
+| `@solumjs/events` | `npm i @solumjs/events` | `EventBus`, `@EventListener`, `@TransactionalEventListener`, `@Async` |
+| `@solumjs/schedule` | `npm i @solumjs/schedule` | `@Scheduled` with cron/interval support, timezone |
+| `@solumjs/validation` | `npm i @solumjs/validation` | 20+ validation decorators, whitelist/blacklist modes |
+| `@solumjs/middlewares` | `npm i @solumjs/middlewares` | Security headers, CORS, rate limiting, CSRF, error handling, `@ControllerAdvice` |
+| `@solumjs/aop` | `npm i @solumjs/aop` | Aspect-Oriented Programming: `@Aspect`, `@Around`, `@Before`, `@After` |
+| `@solumjs/testing` | `npm i @solumjs/testing` | `createTestApplication()`, `@MockBean`, `MockLogger` |
+| `@solumjs/websocket` | `npm i @solumjs/websocket` | WebSocket handlers, STOMP protocol, `@MessageMapping` |
+| `@solumjs/email` | `npm i @solumjs/email` | SMTP client, `@SmtpEmail`, `@MailSend`, template engine, test mode |
+| `@solumjs/cli` | `npm i -g @solumjs/cli` | `solum new`, `solum generate`, `solum test`, `solum db:migrate` |
 
 ---
 
@@ -202,7 +116,7 @@ npm install @solumjs/websocket @solumjs/email
 - **TypeScript** >= 5.0.0
 - **npm** >= 9.0.0
 
-### Quick Start (New Project)
+### Quick Start
 
 ```bash
 npm install solumjs
@@ -211,15 +125,13 @@ cd my-app
 npm run dev
 ```
 
-Your API is now running at `http://localhost:3000`
-
 ### Manual Setup
 
 ```bash
 mkdir my-api && cd my-api
 npm init -y
 npm install @solumjs/core @solumjs/http @solumjs/config @solumjs/orm @solumjs/database
-npm install -D typescript @types/node ts-node-dev
+npm install -D typescript @types/node ts-node-dev jest ts-jest @types/jest tsconfig-paths
 ```
 
 **tsconfig.json:**
@@ -279,156 +191,237 @@ export class HealthController {
 }
 ```
 
-**Run:**
-```bash
-npm run dev
-```
-
----
-
-## Packages
-
-SolumJS is organized as a monorepo with 16 modular packages:
-
-| Package | npm | Install | Description |
-|---------|-----|---------|-------------|
-| [`core`](#core) | [`@solumjs/core`](https://www.npmjs.com/package/@solumjs/core) | `npm i @solumjs/core` | DI container, decorators, HTTP exceptions, resilience, metrics, tracing, i18n, batch, discovery |
-| [`http`](#http) | [`@solumjs/http`](https://www.npmjs.com/package/@solumjs/http) | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors, Node.js adapter, HTTP clients |
-| [`aop`](#aop) | [`@solumjs/aop`](https://www.npmjs.com/package/@solumjs/aop) | `npm i @solumjs/aop` | Aspect-Oriented Programming: aspects, pointcuts, advice |
-| [`orm`](#orm) | [`@solumjs/orm`](https://www.npmjs.com/package/@solumjs/orm) | `npm i @solumjs/orm` | Entity/column decorators, query builder, schema builder, dialect abstraction |
-| [`database`](#database) | [`@solumjs/database`](https://www.npmjs.com/package/@solumjs/database) | `npm i @solumjs/database` | `BaseRepository`, `@Transactional`, migrations, driver factory |
-| [`cache`](#cache) | [`@solumjs/cache`](https://www.npmjs.com/package/@solumjs/cache) | `npm i @solumjs/cache` | `@Cacheable`, `@CacheEvict`, `@CachePut`, InMemory/Redis stores |
-| [`auth`](#auth) | [`@solumjs/auth`](https://www.npmjs.com/package/@solumjs/auth) | `npm i @solumjs/auth` | JWT, passwords, guards, `@PreAuthorize`, OAuth2 |
-| [`events`](#events) | [`@solumjs/events`](https://www.npmjs.com/package/@solumjs/events) | `npm i @solumjs/events` | `EventBus`, `@EventListener`, transactional listeners |
-| [`schedule`](#schedule) | [`@solumjs/schedule`](https://www.npmjs.com/package/@solumjs/schedule) | `npm i @solumjs/schedule` | `@Scheduled` with cron/interval support |
-| [`config`](#config) | [`@solumjs/config`](https://www.npmjs.com/package/@solumjs/config) | `npm i @solumjs/config` | `createApplication()`, `.env`/YAML loading, `@Value`, OpenAPI, actuator |
-| [`validation`](#validation) | [`@solumjs/validation`](https://www.npmjs.com/package/@solumjs/validation) | `npm i @solumjs/validation` | 20+ validation decorators, whitelist/blacklist modes |
-| [`middlewares`](#middlewares) | [`@solumjs/middlewares`](https://www.npmjs.com/package/@solumjs/middlewares) | `npm i @solumjs/middlewares` | Security, CORS, rate limiting, error handling, `@ControllerAdvice` |
-| [`testing`](#testing) | [`@solumjs/testing`](https://www.npmjs.com/package/@solumjs/testing) | `npm i @solumjs/testing` | `createTestApplication()`, `@MockBean`, `MockLogger` |
-| [`websocket`](#websocket) | [`@solumjs/websocket`](https://www.npmjs.com/package/@solumjs/websocket) | `npm i @solumjs/websocket` | WebSocket handlers, STOMP protocol, `@MessageMapping` |
-| [`email`](#email) | [`@solumjs/email`](https://www.npmjs.com/package/@solumjs/email) | `npm i @solumjs/email` | SMTP email, `@SmtpEmail`, `@MailSend`, template engine |
-| [`cli`](#cli) | [`@solumjs/cli`](https://www.npmjs.com/package/@solumjs/cli) | `npm i -g @solumjs/cli` | `solum new`, `solum generate` scaffolding commands |
-| [`backend-example`](#backend-example) | — | — | Reference implementation demonstrating all features |
-
 ---
 
 ## Core Concepts
 
-### Dependency Injection
+---
 
-SolumJS provides a full-featured IoC container with automatic constructor injection:
+### @solumjs/core
+
+The foundation package providing IoC container, decorators, HTTP exceptions, resilience patterns, metrics, tracing, i18n, batch processing, service discovery, configuration server, event sourcing, and structured logging.
+
+#### IoC Container
 
 ```typescript
-import { Bean, inject } from "@solumjs/core";
+import { container, inject, Bean } from "@solumjs/core";
 
-// Register a class as a bean
+// Register and resolve beans
 @Bean("IUserService")
 export class UserService {
-    constructor(
-        @inject("IUserRepository") private readonly userRepo: IUserRepository,
-        @inject("ICacheManager") private readonly cache: CacheManager,
-    ) {}
+    constructor(@inject("IUserRepo") private userRepo: IUserRepo) {}
 }
 
-// Or register a value/factory
-@Bean("APP_VERSION")
-export const APP_VERSION = "1.0.0";
+// Programmatic registration
+container.register("IConfig", { port: 3000 });
+const config = container.resolve<Record<string, unknown>>("IConfig");
 
-// Decorator-based injection
-@Bean("IEmailService")
-export class EmailService {
-    @inject("SMTP_HOST")
-    private host!: string;
-}
+// Resolve all implementations
+const allListeners = container.resolveAll("IEventListener");
+
+// Clear container (for testing)
+container.clear();
 ```
 
-#### Scopes
+#### Bean Decorator & Scopes
 
 ```typescript
-import { Bean, Scope } from "@solumjs/core";
+import { Bean, Scope, PostConstruct, PreDestroy } from "@solumjs/core";
 
 // Singleton (default)
-@Bean("IUserService", { scope: Scope.SINGLETON })
+@Bean("IUserService")
 export class UserService {}
 
-// New instance per injection
+// Prototype — new instance per injection
 @Bean("ILogger", { scope: Scope.PROTOTYPE })
 export class Logger {}
 
-// Per-request lifetime (via AsyncLocalStorage)
+// Request scope — per-request lifetime via AsyncLocalStorage
 @Bean("IRequestContext", { scope: Scope.REQUEST })
 export class RequestContext {}
-```
 
-#### Lifecycle Hooks
+// Lazy — resolved only on first access
+@Bean("IHeavyService", { lazy: true })
+export class HeavyService {}
 
-```typescript
-import { Bean, PostConstruct, PreDestroy } from "@solumjs/core";
+// Primary — preferred when multiple implementations exist
+@Bean("ICache")
+@Primary()
+export class RedisCache implements ICache {}
 
+// Conditional — only register if env var is set
+@Bean("IRedisCache")
+@ConditionalOnProperty("REDIS_URL")
+export class RedisCache {}
+
+// Lifecycle hooks
 @Bean("IDatabasePool")
 export class DatabasePool {
     @PostConstruct
     async init() {
-        // Called after all dependencies are injected
         await this.connect();
     }
 
     @PreDestroy
     async cleanup() {
-        // Called when the container is shutting down
         await this.disconnect();
     }
 }
 ```
 
-#### Conditional Registration
+#### HTTP Exceptions
 
 ```typescript
-import { Bean, ConditionalOnProperty } from "@solumjs/core";
+import {
+    BadRequestException,
+    UnauthorizedException,
+    ForbiddenException,
+    NotFoundException,
+    ConflictException,
+    ServiceUnavailableException,
+    PayloadTooLargeException,
+    InvalidQueryParameterException,
+    HttpException,
+} from "@solumjs/core";
 
-@Bean("IRedisCache")
-@ConditionalOnProperty("REDIS_URL")
-export class RedisCache {
-    // Only registered if REDIS_URL is set
+throw new NotFoundException(`User ${id} not found`);
+throw new ConflictException(`Email ${email} is already registered`);
+throw new BadRequestException("Invalid input", { details: errors });
+```
+
+#### Structured Logger
+
+```typescript
+import { Logger, createLogger, getLogger, setGlobalLogger } from "@solumjs/core";
+
+// Create a logger
+const logger = createLogger("MyService", { json: true });
+logger.info("Server started", { port: 3000 });
+logger.error("Database connection failed", { error: err });
+
+// Get global logger
+const log = getLogger("UserService");
+log.warn("Cache miss", { key: "user:123" });
+
+// Child loggers
+const child = logger.child("auth");
+child.info("Token verified");
+
+// Set global logger
+setGlobalLogger(createLogger("app", { level: "info", json: true }));
+```
+
+#### Resilience (Retry & Circuit Breaker)
+
+```typescript
+import { Retry, CircuitBreakerDec, withRetry, withCircuitBreaker } from "@solumjs/core";
+
+// Decorator-based
+@Bean("IExternalApiService")
+export class ExternalApiService {
+    @Retry({ retries: 3, delayMs: 1000 })
+    async fetchData() { /* ... */ }
+
+    @CircuitBreakerDec({ failureThreshold: 5, resetTimeoutMs: 30000 })
+    async callExternalApi() { /* ... */ }
 }
+
+// Programmatic
+const result = await withRetry(() => fetch("https://api.example.com"), { retries: 3 });
+```
+
+#### Metrics & Tracing
+
+```typescript
+import { metrics, startTrace, endSpan, addEvent, setAttribute, getTraceHeaders } from "@solumjs/core";
+
+// Metrics
+metrics.counter("http_requests_total", { method: "GET", path: "/api/users" }).inc();
+metrics.histogram("http_request_duration_ms", 42);
+metrics.gauge("active_connections", 5);
+
+// Tracing
+const traceId = startTrace("handleRequest");
+setAttribute("http.method", "GET");
+addEvent("request.received");
+endSpan(traceId);
+
+// Get trace headers for outgoing requests
+const headers = getTraceHeaders();
+```
+
+#### I18n
+
+```typescript
+import { ResourceBundleMessageSource, I18nMessage, createMessageSource } from "@solumjs/core";
+
+const messages = createMessageSource({
+    baseDir: path.join(__dirname, "locales"),
+    defaultLocale: "en",
+});
+
+const greeting = messages.getMessage("greeting", { name: "World" }, "en");
+```
+
+#### Batch Processing
+
+```typescript
+import { createJob, createStep, ArrayReader, FilterProcessor, ArrayWriter } from "@solumjs/core";
+
+const job = createJob("importUsers")
+    .step(createStep("readAndFilter")
+        .reader(new ArrayReader(rawUsers))
+        .processor(new FilterProcessor((user) => user.email != null))
+        .writer(new ArrayWriter()))
+    .build();
+
+await job.execute();
+```
+
+#### Service Discovery
+
+```typescript
+import { registerInstance, discoverInstances, startRegistry } from "@solumjs/core";
+
+startRegistry({ url: "http://consul:8500", serviceName: "user-service" });
+
+registerInstance({
+    id: "user-service-1",
+    name: "user-service",
+    host: "localhost",
+    port: 3000,
+    status: "UP",
+});
+
+const instances = await discoverInstances("order-service");
+```
+
+#### Event Sourcing
+
+```typescript
+import { AggregateRoot, saveEvents, loadAggregate, registerEventApplier } from "@solumjs/core";
+
+registerEventApplier("OrderCreated", (aggregate, event) => {
+    aggregate.status = "CREATED";
+    aggregate.total = event.data.total;
+});
+
+class Order extends AggregateRoot {
+    id: string;
+    status: string;
+    total: number;
+}
+
+const order = new Order();
+order.apply("OrderCreated", { total: 100 });
+await saveEvents(order.id, order.getUncommittedEvents());
 ```
 
 ---
 
-### Decorators
+### @solumjs/http
 
-SolumJS uses decorators extensively. All decorators are composable:
-
-```typescript
-import { Bean, PostConstruct } from "@solumjs/core";
-import { RestController, Get, Post, Body, Param, UseGuards, UseInterceptors, ResponseStatus } from "@solumjs/http";
-import { JwtAuthGuard, RolesGuard, Roles } from "@solumjs/auth";
-import { Cacheable } from "@solumjs/cache";
-import { Validated } from "@solumjs/validation";
-
-@RestController("/users")
-@UseGuards(JwtAuthGuard, RolesGuard)
-export class UserController {
-
-    @Get("/:id")
-    @Cacheable({ key: "user:{id}", ttl: 300 })
-    @Roles("ADMIN")
-    async getUser(@Param("id") id: string) {
-        return this.userService.findById(id);
-    }
-
-    @Post("/")
-    @ResponseStatus(201)
-    @Validated(CreateUserDto)
-    async createUser(@Body() dto: CreateUserDto) {
-        return this.userService.createUser(dto);
-    }
-}
-```
-
----
-
-### HTTP Layer
+HTTP abstraction with router, REST decorators, guards, interceptors, pagination, session management, HTTP clients, and static file serving.
 
 #### Route Definitions
 
@@ -439,46 +432,56 @@ import { RestController, Get, Post, Put, Patch, Delete } from "@solumjs/http";
 export class ProductController {
 
     @Get("/")
-    async listProducts() { /* ... */ }
+    async listProducts() { return []; }
 
     @Get("/:id")
-    async getProduct(@Param("id") id: string) { /* ... */ }
+    async getProduct(@Param("id") id: string) { return {}; }
 
     @Post("/")
-    async createProduct(@Body() dto: CreateProductDto) { /* ... */ }
+    async createProduct(@Body() dto: CreateProductDto) { return dto; }
 
     @Put("/:id")
-    async updateProduct(@Param("id") id: string, @Body() dto: UpdateProductDto) { /* ... */ }
+    async updateProduct(@Param("id") id: string, @Body() dto: UpdateProductDto) { return dto; }
 
     @Patch("/:id")
-    async patchProduct(@Param("id") id: string, @Body() dto: Partial<UpdateProductDto>) { /* ... */ }
+    async patchProduct(@Param("id") id: string, @Body() dto: Partial<UpdateProductDto>) { return dto; }
 
     @Delete("/:id")
-    async deleteProduct(@Param("id") id: string) { /* ... */ }
+    async deleteProduct(@Param("id") id: string) { }
 }
 ```
 
 #### Parameter Decorators
 
 ```typescript
-@Get("/search")
-async search(
-    @Query("q") query: string,           // ?q=hello
-    @Query("page") page: number,          // ?page=1
-    @Header("Authorization") auth: string, // Authorization header
-    @CookieValue("session") sid: string,   // session cookie
-    @CurrentUser() user: User,            // authenticated user (set by guard)
-    @Req() req: SolumjsRequest,           // raw request
-    @Res() res: SolumjsResponse,          // raw response
-) { /* ... */ }
+import { RestController, Get, Body, Param, Query, Header, CookieValue, CurrentUser, Req, Res, Next } from "@solumjs/http";
+
+@RestController("/api")
+export class ExampleController {
+
+    @Get("/search")
+    async search(
+        @Query("q") query: string,
+        @Query("page") page: number,
+        @Header("Authorization") auth: string,
+        @CookieValue("session") sid: string,
+        @CurrentUser() user: User,
+        @Req() req: SolumjsRequest,
+        @Res() res: SolumjsResponse,
+    ) { return { query, page }; }
+
+    @Post("/data")
+    async create(@Body() body: CreateDto) { return body; }
+}
 ```
 
 #### Guards
 
 ```typescript
-import { Guard, ExecutionContext } from "@solumjs/http";
-import { inject } from "@solumjs/core";
+import { Guard, ExecutionContext, UseGuards, Roles } from "@solumjs/http";
+import { Bean, inject } from "@solumjs/core";
 
+// Custom guard
 @Bean("IApiKeyGuard")
 export class ApiKeyGuard implements Guard {
     constructor(@inject("IConfigService") private config: ConfigService) {}
@@ -490,41 +493,49 @@ export class ApiKeyGuard implements Guard {
     }
 }
 
-// Usage
-@UseGuards(ApiKeyGuard)
+// Usage with multiple guards
 @RestController("/api")
-export class ApiController { /* ... */ }
+@UseGuards(ApiKeyGuard, JwtAuthGuard)
+export class ApiController {
+
+    @Get("/admin")
+    @Roles("ADMIN")
+    async adminEndpoint() { return "admin data"; }
+}
 ```
 
 #### Interceptors
 
 ```typescript
-import { Interceptor, ExecutionContext, CallHandler } from "@solumjs/http";
-import { Observable } from "rxjs"; // conceptually — SolumJS uses async iterators
+import { HandlerInterceptor, ExecutionContext, UseInterceptors } from "@solumjs/http";
+import { Bean } from "@solumjs/core";
 
 @Bean("LoggingInterceptor")
-export class LoggingInterceptor implements Interceptor {
-    async intercept(context: ExecutionContext, next: CallHandler): Promise<any> {
+export class LoggingInterceptor implements HandlerInterceptor {
+    async intercept(context: ExecutionContext, next: () => Promise<any>): Promise<any> {
         const start = Date.now();
-        const result = await next.handle();
-        const duration = Date.now() - start;
-        console.log(`Request took ${duration}ms`);
+        const result = await next();
+        console.log(`Request took ${Date.now() - start}ms`);
         return result;
     }
 }
+
+@RestController("/api")
+@UseInterceptors(LoggingInterceptor)
+export class ApiController { /* ... */ }
 ```
 
 #### Pagination
 
 ```typescript
-import { PageRequest, Page } from "@solumjs/http";
+import { PageRequest, Page, buildPage } from "@solumjs/http";
 
 @RestController("/users")
 export class UserController {
 
     @Get("/")
     async listUsers(@Query() pageRequest: PageRequest): Promise<Page<UserResponseDto>> {
-        // pageRequest contains: page, size, sort, direction
+        // pageRequest: { page, size, sort, direction, offset }
         const users = await this.userService.findAll(pageRequest);
         return users; // { data: [...], page, size, total, totalPages }
     }
@@ -534,7 +545,7 @@ export class UserController {
 #### Declarative HTTP Clients
 
 ```typescript
-import { HttpClient, HttpGet, HttpPost, HttpPut, HttpDelete, Timeout, Retryable } from "@solumjs/http";
+import { HttpClient, HttpGet, HttpPost, HttpPut, HttpDelete } from "@solumjs/http";
 
 @HttpClient("jsonplaceholder")
 @BaseUrl("https://jsonplaceholder.typicode.com")
@@ -556,14 +567,230 @@ export interface TodoClient {
 }
 ```
 
+#### Session Management
+
+```typescript
+import { createSessionMiddleware, MemorySessionStore, RedisSessionStore } from "@solumjs/http";
+
+// In-memory session (default)
+app.use(createSessionMiddleware());
+
+// Custom TTL
+app.use(createSessionMiddleware({ ttlMs: 30 * 60 * 1000 }));
+
+// Custom cookie name
+app.use(createSessionMiddleware({ cookieName: "myapp.sid" }));
+
+// Redis session store (for horizontal scaling)
+import { connectRedisSessionStore } from "@solumjs/http";
+const redisStore = await connectRedisSessionStore("redis://localhost:6379");
+app.use(createSessionMiddleware({ store: redisStore }));
+
+// Session usage in handlers
+@RestController("/api")
+export class SessionController {
+
+    @Post("/login")
+    async login(@Req() req: SolumjsRequest) {
+        req.session.set("userId", "123");
+        return { message: "Logged in" };
+    }
+
+    @Get("/me")
+    async me(@Req() req: SolumjsRequest) {
+        const userId = req.session.get("userId");
+        return { userId };
+    }
+}
+```
+
+#### Static Files
+
+```typescript
+import { serveStatic } from "@solumjs/http";
+
+app.use(serveStatic("public", { index: "index.html" }));
+```
+
+#### Response Status
+
+```typescript
+import { RestController, Post, ResponseStatus } from "@solumjs/http";
+
+@RestController("/users")
+export class UserController {
+
+    @Post("/")
+    @ResponseStatus(201)
+    async createUser(@Body() dto: CreateUserDto) { return dto; }
+}
+```
+
 ---
 
-### ORM & Database
+### @solumjs/config
+
+Application bootstrap, environment loading, YAML configuration, `@Value` decorator, OpenAPI/Swagger, and actuator endpoints.
+
+#### createApplication
+
+```typescript
+import { createApplication, createEnvConfig, loadEnv } from "@solumjs/config";
+
+loadEnv(); // loads .env file
+
+createApplication({
+    config: createEnvConfig(process.env),
+    scanBaseDir: __dirname,
+    scanDirs: ["controllers", "services", "repositories", "tasks", "advice"],
+    bodyLimitBytes: 10 * 1024 * 1024, // 10MB
+    onListen: (port) => console.log(`Server running on port ${port}`),
+});
+```
+
+#### Environment Loading
+
+```typescript
+import { loadEnv, createEnvConfig } from "@solumjs/config";
+
+// Load .env file
+loadEnv();
+
+// Access via process.env
+const port = process.env.PORT || 3000;
+
+// Or create a typed config
+const config = createEnvConfig(process.env);
+const dbHost = config.get("DB_HOST");
+const dbPort = config.getNumber("DB_PORT");
+const enableCache = config.getBoolean("ENABLE_CACHE");
+```
+
+#### YAML Configuration
+
+```yaml
+# config/application.yml
+server:
+  port: 3000
+  host: 0.0.0.0
+
+database:
+  client: postgres
+  host: localhost
+  port: 5432
+  name: myapp
+```
+
+```typescript
+import { createYamlConfig } from "@solumjs/config";
+
+// Reads config/application.yml (or config/application.yaml)
+const yamlConfig = createYamlConfig();
+```
+
+#### @Value Decorator
+
+```typescript
+import { Value } from "@solumjs/config";
+import { Bean } from "@solumjs/core";
+
+@Bean("IAppConfig")
+export class AppConfig {
+    @Value("server.port")
+    port!: number;
+
+    @Value("database.host")
+    dbHost!: string;
+
+    @Value("jwt.secret")
+    jwtSecret!: string;
+}
+```
+
+#### OpenAPI / Swagger UI
+
+```typescript
+import { mountOpenApi } from "@solumjs/config";
+
+// Serves GET /openapi.json and GET /docs
+mountOpenApi(adapter, {
+    title: "My API",
+    version: "1.0.0",
+    description: "API documentation",
+    docsPath: "/docs",
+    specPath: "/openapi.json",
+});
+```
+
+#### @ApiProperty
+
+```typescript
+import { ApiProperty } from "@solumjs/config";
+import { Required, IsEmail, MinLength, MaxLength } from "@solumjs/validation";
+
+export class CreateUserDto {
+    @ApiProperty({ description: "User full name", example: "John Doe" })
+    @Required()
+    @MinLength(2)
+    @MaxLength(100)
+    name!: string;
+
+    @ApiProperty({ description: "User email", format: "email" })
+    @Required()
+    @IsEmail()
+    email!: string;
+}
+```
+
+#### Actuator Endpoints
+
+```typescript
+import { mountActuator } from "@solumjs/config";
+
+// Serves:
+// GET /actuator/health — health checks (DB, memory)
+// GET /actuator/info — application info
+// GET /actuator/beans — registered beans
+// GET /actuator/mappings — route mappings
+// GET /actuator/env — sanitized environment
+// GET /actuator/loggers — log levels
+// GET /actuator/metrics — JVM-style metrics
+mountActuator(adapter, {
+    basePath: "/actuator",
+    healthchecks: [
+        { name: "database", check: async () => ({ status: "UP" }) },
+    ],
+    info: { version: "1.0.0" },
+});
+```
+
+#### Component Scanning
+
+```typescript
+createApplication({
+    scanBaseDir: __dirname,
+    scanDirs: [
+        "config/beans",
+        "repositories",
+        "services",
+        "controllers",
+        "advice",
+        "auth",
+        "tasks",
+    ],
+});
+```
+
+---
+
+### @solumjs/orm
+
+Entity decorators, query builder, relations, schema builder, and multi-database support.
 
 #### Entity Definition
 
 ```typescript
-import { Entity, Column, ColumnType, PrimaryGeneratedColumn, CreatedAtColumn, UpdatedAtColumn, ManyToOne, OneToMany, ManyToMany, Index } from "@solumjs/orm";
+import { Entity, Column, ColumnType, PrimaryGeneratedColumn, CreatedAtColumn, UpdatedAtColumn, ManyToOne, OneToMany, ManyToMany, OneToOne, Index, VersionColumn } from "@solumjs/orm";
 
 @Entity("users")
 @Index("idx_users_email", ["email"], true) // unique index
@@ -584,6 +811,9 @@ export class User {
     @Column({ type: ColumnType.VARCHAR, length: 32, default: "'USER'" })
     public role!: string;
 
+    @VersionColumn()
+    public version!: number;
+
     @CreatedAtColumn()
     public readonly createdAt!: Date;
 
@@ -602,87 +832,126 @@ export class User {
         this.email = email;
     }
 }
+```
+
+#### Lifecycle Callbacks
+
+```typescript
+import { PrePersist, PostPersist, PreUpdate, PostUpdate, PreRemove, PostRemove, PostLoad } from "@solumjs/orm";
+
+@Entity("users")
+export class User {
+    // ... columns ...
+
+    @PrePersist
+    onPrePersist() { this.createdAt = new Date(); }
+
+    @PostPersist
+    onPostPersist() { /* after saved */ }
+
+    @PreUpdate
+    onPreUpdate() { this.updatedAt = new Date(); }
+
+    @PostUpdate
+    onPostUpdate() { /* after updated */ }
+
+    @PreRemove
+    onPreRemove() { /* before delete */ }
+
+    @PostRemove
+    onPostRemove() { /* after delete */ }
+
+    @PostLoad
+    onPostLoad() { /* after hydration */ }
+}
+```
+
+#### Relations
+
+```typescript
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, OneToOne, ManyToMany, JoinColumn } from "@solumjs/orm";
 
 @Entity("posts")
 export class Post {
-
     @PrimaryGeneratedColumn(ColumnType.UUID)
     public readonly id!: string;
 
     @Column({ type: ColumnType.VARCHAR, length: 255 })
     public title!: string;
 
-    @Column({ type: ColumnType.TEXT })
-    public content!: string;
-
     @ManyToOne(() => User, (user) => user.posts)
     public author?: User;
-}
 
-@Entity("tags")
-export class Tag {
-
-    @PrimaryGeneratedColumn(ColumnType.UUID)
-    public readonly id!: string;
-
-    @Column({ type: ColumnType.VARCHAR, length: 50 })
-    public name!: string;
+    @OneToOne(() => Profile, (profile) => profile.user)
+    @JoinColumn()
+    public profile?: Profile;
 }
 ```
 
 #### Query Builder
 
 ```typescript
-import { QueryBuilder } from "@solumjs/orm";
-
-// SELECT with conditions
-const users = await this.queryBuilder
-    .select()
-    .from("users")
+// From repository
+const users = await this.query()
     .where("role", "ADMIN")
     .andWhere("createdAt", ">", new Date("2024-01-01"))
     .orderBy("name", "ASC")
     .limit(10)
     .offset(0)
-    .execute();
+    .all();
 
-// JOIN
-const usersWithPosts = await this.queryBuilder
-    .select()
-    .from("users")
-    .innerJoin("posts", "users.id", "posts.authorId")
+// First result
+const user = await this.query()
+    .where("email", "john@example.com")
+    .first();
+
+// With joins
+const posts = await this.query()
+    .join("author", "users.id", "posts.authorId")
     .where("users.role", "ADMIN")
-    .execute();
+    .all();
 
-// INSERT
-await this.queryBuilder
-    .insert("users")
-    .values({ name: "John", email: "john@example.com" })
-    .execute();
+// Pagination (single query with COUNT(*) OVER())
+const page = await this.query().paginate({ page: 1, size: 20, sorts: [] });
 
-// UPDATE
-await this.queryBuilder
-    .update("users")
-    .set({ name: "Jane" })
-    .where("id", userId)
-    .execute();
+// Raw query
+const result = await this.raw("SELECT * FROM users WHERE email = $1", ["john@example.com"]);
 
-// DELETE
-await this.queryBuilder
-    .delete()
-    .from("users")
-    .where("id", userId)
-    .execute();
+// Count
+const count = await this.query().where("role", "USER").count();
 ```
 
-#### Repository Pattern
+#### Schema Sync
+
+```typescript
+import { SchemaSync } from "@solumjs/orm";
+
+const sync = new SchemaSync(driver, [User, Product, Order]);
+
+// Validate (drift detection)
+const result = await sync.validate();
+if (!result.ok) {
+    for (const diff of result.diffs) console.error(diff);
+}
+
+// Auto-update schema
+await sync.update();
+```
+
+---
+
+### @solumjs/database
+
+Repository pattern, transactions, migrations, and driver factory.
+
+#### BaseRepository
 
 ```typescript
 import { BaseRepository } from "@solumjs/database";
 import { Bean, inject } from "@solumjs/core";
 import { User } from "@entities/user.entity";
 
-export interface IUserRepository extends IBaseRepository<User, string> {
+export interface IUserRepository extends BaseRepository<User, string> {
     findByEmail(email: string): Promise<User | null>;
     findAdmins(): Promise<User[]>;
 }
@@ -692,15 +961,11 @@ export class UserRepository extends BaseRepository<User, string> implements IUse
     protected readonly entityCtor = User;
 
     async findByEmail(email: string): Promise<User | null> {
-        return this.query()
-            .where("email", email)
-            .first();
+        return this.query().where("email", email).first();
     }
 
     async findAdmins(): Promise<User[]> {
-        return this.query()
-            .where("role", "ADMIN")
-            .all();
+        return this.query().where("role", "ADMIN").all();
     }
 }
 
@@ -709,16 +974,22 @@ export class UserRepository extends BaseRepository<User, string> implements IUse
 export class UserService {
     constructor(@inject("IUserRepository") private userRepo: IUserRepository) {}
 
-    async createUser(dto: CreateUserDto): Promise<User> {
-        const user = new User(crypto.randomUUID(), dto.name, dto.email);
-        user.passwordHash = hashPassword(dto.password);
-        return this.userRepo.save(user);
-    }
-
     async findById(id: string): Promise<User> {
         const user = await this.userRepo.findById(id);
         if (!user) throw new NotFoundException(`User ${id} not found`);
         return user;
+    }
+
+    async findAll(): Promise<User[]> {
+        return this.userRepo.findAll();
+    }
+
+    async save(user: User): Promise<User> {
+        return this.userRepo.save(user);
+    }
+
+    async deleteById(id: string): Promise<void> {
+        await this.userRepo.deleteById(id);
     }
 }
 ```
@@ -733,78 +1004,54 @@ export class OrderService {
 
     @Transactional()
     async createOrder(dto: CreateOrderDto): Promise<Order> {
-        // Both operations run in the same transaction
         const order = await this.orderRepo.save(new Order(dto));
         await this.inventoryRepo.decrement(dto.productId, dto.quantity);
-        return order;
+        return order; // both operations in same transaction
     }
 }
 ```
 
-#### Database Configuration
+#### Driver Factory
 
 ```typescript
 import { createDatabaseDriver } from "@solumjs/database";
 
 // Auto-configured from environment variables:
-// DB_CLIENT=postgres, DB_HOST=localhost, DB_PORT=5432, DB_NAME=mydb, DB_USER=postgres, DB_PASSWORD=secret
+// DB_CLIENT=postgres|mysql|sqlite|mssql|oracle
+// DB_HOST=localhost
+// DB_PORT=5432
+// DB_NAME=mydb
+// DB_USER=postgres
+// DB_PASSWORD=secret
 
 const driver = await createDatabaseDriver();
 ```
 
-**Supported drivers:**
-- `postgres` (PostgreSQL)
-- `mysql` (MySQL)
-- `sqlite` (SQLite)
-- `mssql` (MS SQL Server)
-- `oracle` (Oracle)
-
 #### Migrations
 
 ```typescript
-// src/database/migrate.ts
 import { MigrationRunner, createDatabaseDriver } from "@solumjs/database";
 
 const driver = await createDatabaseDriver();
 const runner = new MigrationRunner(driver, path.join(__dirname, "migrations"));
 
-// Run pending migrations
-await runner.run();
-
-// Rollback last migration
-await runner.rollback(1);
-
-// Check status
-await runner.status();
+await runner.run();        // Run pending migrations
+await runner.rollback(1);  // Rollback last migration
+await runner.status();     // Show migration status
 ```
 
 ```bash
-npm run migrate           # Run all pending
-npm run migrate:down 1    # Rollback 1 step
-npm run migrate:status    # Show migration status
-npm run migrate:generate CreateUsersTable  # Generate new migration file
-```
-
-#### Schema Sync
-
-```typescript
-import { SchemaSync } from "@solumjs/orm";
-
-const sync = new SchemaSync(driver, [User, Product, Order]);
-
-// Validate schema (drift detection)
-const result = await sync.validate();
-if (!result.ok) {
-    for (const diff of result.diffs) console.error(diff);
-}
-
-// Auto-update schema
-await sync.update();
+npm run migrate                           # Run all pending
+npm run migrate:down 1                    # Rollback 1 step
+npm run migrate:status                    # Show status
+npm run migrate:generate CreateUsersTable # Generate new migration
 ```
 
 ---
 
-### Authentication & Authorization
+### @solumjs/auth
+
+JWT authentication, guards, role-based access, `@PreAuthorize`, and OAuth2.
 
 #### JWT Authentication
 
@@ -818,9 +1065,7 @@ export class UserController {
 
     @Get("/")
     @Roles("ADMIN")
-    async listUsers() {
-        return this.userService.findAll();
-    }
+    async listUsers() { return this.userService.findAll(); }
 
     @Get("/me")
     async getProfile(@CurrentUser() user: JwtPayload) {
@@ -863,25 +1108,12 @@ export class DocumentController {
 }
 ```
 
-#### Password Hashing
-
-```typescript
-import { hashPassword, verifyPassword } from "@solumjs/auth";
-
-// Hash a password (scrypt with random salt)
-const hash = hashPassword("my-password");
-
-// Verify a password
-const isValid = verifyPassword("my-password", hash);
-```
-
 #### OAuth2
 
 ```typescript
-import { OAuth2Client, OAuth2Guard } from "@solumjs/auth";
+import { OAuth2Client } from "@solumjs/auth";
 
-@Bean("IOAuth2Client")
-export const googleOAuth2Client = new OAuth2Client({
+const googleClient = new OAuth2Client({
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     redirectUri: "http://localhost:3000/auth/google/callback",
@@ -889,11 +1121,24 @@ export const googleOAuth2Client = new OAuth2Client({
     tokenEndpoint: "https://oauth2.googleapis.com/token",
     scopes: ["openid", "email", "profile"],
 });
+
+// Generate authorization URL
+const authUrl = googleClient.getAuthorizationUrl();
+
+// Exchange code for tokens
+const tokens = await googleClient.exchangeCode(code);
+
+// Get user info
+const userInfo = await googleClient.getUserInfo(tokens.accessToken);
 ```
 
 ---
 
-### Caching
+### @solumjs/cache
+
+Caching with decorator-based cache management.
+
+#### Cache Decorators
 
 ```typescript
 import { Cacheable, CacheEvict, CachePut, CacheManager } from "@solumjs/cache";
@@ -916,43 +1161,52 @@ export class ProductService {
 
     @CacheEvict({ key: "product:{id}" })
     async delete(id: string): Promise<void> {
-        // Removes from cache
         await this.productRepo.delete(id);
     }
 
     @CacheEvict({ key: "products:list", allEntries: true })
-    async clearCache(): Promise<void> {
+    async clearListCache(): Promise<void> {
         // Removes all matching entries
     }
 }
 ```
 
-**Cache Stores:**
+#### Cache Key Expression
+
+```typescript
+// Supports {param} syntax resolved from method arguments
+@Cacheable({ key: "user:{id}" })
+async findById(id: string) { /* ... */ }
+
+// Supports {0}, {1} positional syntax
+@Cacheable({ key: "order:{0}:item:{1}" })
+async getOrderItem(orderId: string, itemId: string) { /* ... */ }
+```
+
+#### InMemoryCacheStore
 
 ```typescript
 import { InMemoryCacheStore } from "@solumjs/cache";
-import { RedisCacheStore } from "@solumjs/cache";
 
-// In-memory (default)
-const memoryCache = new InMemoryCacheStore({ maxSize: 1000 });
+// Default: 1000 entries
+const store = new InMemoryCacheStore();
 
-// Redis
-const redisCache = new RedisCacheStore({
-    host: "localhost",
-    port: 6379,
-    prefix: "myapp:",
-});
+// Custom max entries
+const store = new InMemoryCacheStore(5000);
 ```
 
 ---
 
-### Events
+### @solumjs/events
+
+Event-driven architecture with publish/subscribe pattern.
+
+#### Publishing Events
 
 ```typescript
-import { EventBus, EventListener, OnEvent, TransactionalEventListener, Async } from "@solumjs/events";
+import { EventBus } from "@solumjs/events";
 import { Bean, inject } from "@solumjs/core";
 
-// Publishing events
 @Bean("IUserService")
 export class UserService {
     constructor(@inject("IEventBus") private eventBus: EventBus) {}
@@ -963,11 +1217,17 @@ export class UserService {
         return user;
     }
 }
+```
 
-// Listening to events
+#### Listening to Events
+
+```typescript
+import { EventListener, TransactionalEventListener, Async } from "@solumjs/events";
+
+// Standard listener
 export class UserCreatedListener {
 
-    @OnEvent("USER_CREATED")
+    @EventListener("USER_CREATED")
     async handleUserCreated(payload: { userId: string; email: string }) {
         console.log(`User created: ${payload.email}`);
     }
@@ -978,18 +1238,16 @@ export class UserAuditListener {
 
     @TransactionalEventListener("USER_CREATED")
     async handleAfterCommit(payload: { userId: string }) {
-        // Only runs if the transaction that published the event committed
         await this.auditRepo.log("USER_CREATED", payload);
     }
 }
 
-// Async listener
+// Async listener (does not block the publisher)
 export class UserWelcomeListener {
 
-    @OnEvent("USER_CREATED")
+    @EventListener("USER_CREATED")
     @Async()
     async sendWelcomeEmail(payload: { userId: string; email: string }) {
-        // Runs asynchronously, does not block the publisher
         await this.emailService.sendWelcome(payload.email);
     }
 }
@@ -997,10 +1255,14 @@ export class UserWelcomeListener {
 
 ---
 
-### Scheduling
+### @solumjs/schedule
+
+Task scheduling with cron and interval support.
+
+#### Cron Scheduling
 
 ```typescript
-import { Scheduled } from "@solumjs/schedule";
+import { Scheduled, startScheduledTasks, stopScheduledTasks } from "@solumjs/schedule";
 import { Bean } from "@solumjs/core";
 
 @Bean("ICacheMaintenanceTask")
@@ -1016,9 +1278,38 @@ export class CacheMaintenanceTask {
         console.log("Refreshing metrics...");
     }
 
-    @Scheduled("0 2 * * *", { timezone: "America/New_York" }) // 2 AM EST
+    @Scheduled("0 2 * * *", { zone: "America/New_York" }) // 2 AM EST
     async dailyCleanup() {
         console.log("Running daily cleanup...");
+    }
+}
+
+// Start all scheduled tasks
+startScheduledTasks();
+
+// Stop all scheduled tasks
+stopScheduledTasks();
+```
+
+#### Interval Scheduling
+
+```typescript
+@Bean("IHealthChecker")
+export class HealthChecker {
+
+    @Scheduled("30s") // Every 30 seconds
+    async checkHealth() {
+        console.log("Checking health...");
+    }
+
+    @Scheduled("5m") // Every 5 minutes
+    async cleanupTempFiles() {
+        console.log("Cleaning up...");
+    }
+
+    @Scheduled({ fixedDelay: 10000 }) // Fixed delay between executions
+    async pollingTask() {
+        console.log("Polling...");
     }
 }
 ```
@@ -1034,24 +1325,33 @@ export class CacheMaintenanceTask {
 *  *  *  *  *
 ```
 
+**Interval Syntax:** `500ms`, `30s`, `5m`, `1h`
+
 ---
 
-### Validation
+### @solumjs/validation
+
+20+ validation decorators for DTOs.
+
+#### Usage with Controllers
 
 ```typescript
+import { RestController, Post, Body } from "@solumjs/http";
 import {
-    IsString, IsEmail, IsOptional, MinLength, MaxLength,
-    IsIn, IsUUID, IsNumber, Min, Max, IsArray, ValidateNested,
-    IsPositive, IsNegative, IsUrl, IsDateString, Pattern
+    Required, IsEmail, IsOptional, MinLength, MaxLength,
+    IsIn, IsUUID, IsNumber, Min, Max, IsArray,
+    IsPositive, IsNegative, IsUrl, IsDateString, Pattern,
+    IsString, IsBoolean, IsInt, NotEmpty, NotBlank, NotNull,
 } from "@solumjs/validation";
-import { Validated } from "@solumjs/validation";
 
 export class CreateUserDto {
+    @Required()
     @IsString()
     @MinLength(2)
     @MaxLength(100)
     name!: string;
 
+    @Required()
     @IsEmail()
     email!: string;
 
@@ -1071,9 +1371,11 @@ export class CreateUserDto {
 }
 
 export class CreateOrderDto {
+    @Required()
     @IsUUID()
     productId!: string;
 
+    @Required()
     @IsNumber()
     @IsPositive()
     quantity!: number;
@@ -1082,39 +1384,41 @@ export class CreateOrderDto {
     @IsString()
     notes?: string;
 
+    @IsOptional()
     @IsArray()
-    @ValidateNested({ each: true })
-    tags?: TagDto[];
+    tags?: string[];
 }
 
-// Usage
 @RestController("/users")
 export class UserController {
 
     @Post("/")
-    @Validated(CreateUserDto)
     async createUser(@Body() dto: CreateUserDto) {
         return this.userService.createUser(dto);
     }
 }
 ```
 
-**Available Validators:**
-- Type: `@IsString`, `@IsNumber`, `@IsBoolean`, `@IsArray`, `@IsInt`
-- Format: `@IsEmail`, `@IsUrl`, `@IsJWT`, `@IsUUID`, `@IsDateString`
-- Length: `@MinLength`, `@MaxLength`, `@Size`
-- Range: `@Min`, `@Max`, `@IsPositive`, `@IsNegative`
-- Constraint: `@IsIn`, `@Pattern`, `@NotEmpty`, `@NotBlank`, `@NotNull`
-- Optional: `@IsOptional`
-- Nested: `@ValidateNested`
+#### Available Validators
+
+| Category | Decorators |
+|----------|-----------|
+| Type | `@IsString`, `@IsNumber`, `@IsBoolean`, `@IsArray`, `@IsInt` |
+| Format | `@IsEmail`, `@IsUrl`, `@IsJWT`, `@IsUUID`, `@IsDateString` |
+| Length | `@MinLength`, `@MaxLength`, `@Size` |
+| Range | `@Min`, `@Max`, `@IsPositive`, `@IsNegative` |
+| Constraint | `@IsIn`, `@Pattern`, `@NotEmpty`, `@NotBlank`, `@NotNull` |
+| Optional | `@IsOptional` |
+| Required | `@Required` |
 
 ---
 
-### AOP (Aspect-Oriented Programming)
+### @solumjs/aop
+
+Aspect-Oriented Programming with pointcut expressions.
 
 ```typescript
-import { Aspect, Around, Before, After, AfterReturning, AfterThrowing } from "@solumjs/aop";
-import { LogExecution, Auditable } from "@solumjs/aop";
+import { Aspect, Around, Before, After, AfterReturning, AfterThrowing, LogExecution, Auditable } from "@solumjs/aop";
 import { Bean } from "@solumjs/core";
 
 // Custom aspect
@@ -1126,8 +1430,7 @@ export class PerformanceAspect {
     async measurePerformance(joinPoint: any) {
         const start = Date.now();
         const result = await joinPoint.proceed();
-        const duration = Date.now() - start;
-        console.log(`${joinPoint.target.constructor.name}.${joinPoint.methodName} took ${duration}ms`);
+        console.log(`${joinPoint.target.constructor.name}.${joinPoint.methodName} took ${Date.now() - start}ms`);
         return result;
     }
 }
@@ -1138,7 +1441,6 @@ export class UserService {
 
     @LogExecution({ level: "info", includeArgs: true, includeResult: false })
     async createUser(dto: CreateUserDto): Promise<User> {
-        // Automatically logs method entry/exit
         return this.userRepo.save(new User(dto));
     }
 }
@@ -1149,7 +1451,6 @@ export class DocumentService {
 
     @Auditable({ action: "UPDATE", resource: "Document" })
     async updateDocument(id: string, dto: UpdateDocumentDto): Promise<Document> {
-        // Automatically logs audit trail
         return this.documentRepo.update(id, dto);
     }
 }
@@ -1166,24 +1467,66 @@ export class DocumentService {
 
 ---
 
-### Error Handling
+### @solumjs/middlewares
 
-#### HTTP Exceptions
+Security, CORS, rate limiting, CSRF, error handling, and `@ControllerAdvice`.
+
+#### Security Middleware
 
 ```typescript
-import {
-    BadRequestException,
-    UnauthorizedException,
-    ForbiddenException,
-    NotFoundException,
-    ConflictException,
-    InternalServerErrorException,
-    HttpException
-} from "@solumjs/core";
+import { createSecurityMiddlewares, requestLogger, errorHandler, notFoundHandler } from "@solumjs/middlewares";
 
-throw new NotFoundException(`User ${id} not found`);
-throw new ConflictException(`Email ${email} is already registered`);
-throw new BadRequestException("Invalid input", { details: errors });
+// Apply all security middleware at once
+app.use(createSecurityMiddlewares());
+
+// Request logging
+app.use(requestLogger());
+
+// Global error handler
+app.use(errorHandler());
+
+// 404 handler (use as last middleware)
+app.use(notFoundHandler());
+```
+
+#### Rate Limiting
+
+```typescript
+import { createSecurityMiddlewares } from "@solumjs/middlewares";
+
+// Built into createSecurityMiddlewares() with defaults
+app.use(createSecurityMiddlewares({
+    rateLimit: { windowMs: 15 * 60 * 1000, max: 100 },
+    cors: { origin: "*" },
+}));
+```
+
+#### CSRF Protection
+
+```typescript
+import { csrfProtection } from "@solumjs/middlewares";
+
+app.use(csrfProtection());
+
+// With custom options
+app.use(csrfProtection({
+    cookieName: "csrf-token",
+    headerName: "x-csrf-token",
+}));
+```
+
+#### Redis Rate Limiting (Distributed)
+
+```typescript
+import { createRedisRateLimit } from "@solumjs/middlewares";
+
+const redisClient = await connectRedis({ url: "redis://localhost:6379" });
+
+app.use(createRedisRateLimit({
+    redis: redisClient,
+    windowMs: 60000,
+    max: 100,
+}));
 ```
 
 #### ControllerAdvice (Global Error Handling)
@@ -1198,47 +1541,33 @@ export class GlobalExceptionAdvice {
 
     @ExceptionHandler(NotFoundException)
     handleNotFound(err: NotFoundException, req: SolumjsRequest) {
-        req.log.warn({ path: req.path }, err.message);
+        req.log?.warn({ path: req.path }, err.message);
         return { status: "error", code: "NOT_FOUND", message: err.message };
     }
 
     @ExceptionHandler(BadRequestException)
     handleBadRequest(err: BadRequestException, req: SolumjsRequest) {
-        req.log.warn({ path: req.path }, err.message);
         return { status: "error", code: "BAD_REQUEST", message: err.message };
     }
 
     @ExceptionHandler(Error)
     handleGeneric(err: Error, req: SolumjsRequest) {
-        req.log.error({ path: req.path, err }, "Unhandled error");
+        req.log?.error({ path: req.path, err }, "Unhandled error");
         return { status: "error", code: "INTERNAL_ERROR", message: "Internal server error" };
     }
 }
 ```
 
-#### Security Middleware
-
-```typescript
-import {
-    SecurityHeadersMiddleware,
-    CorsMiddleware,
-    RateLimitMiddleware,
-    RequestLoggerMiddleware,
-    ErrorHandlerMiddleware
-} from "@solumjs/middlewares";
-
-// Applied via createApplication() configuration or manually
-```
-
 ---
 
-### Testing
+### @solumjs/testing
 
-#### Setup
+Testing utilities with mock support.
+
+#### createTestApplication
 
 ```typescript
 import { createTestApplication } from "@solumjs/testing";
-import { MockBean, MockLogger } from "@solumjs/testing";
 import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 
@@ -1247,15 +1576,7 @@ describe("UserController", () => {
 
     beforeAll(async () => {
         app = await createTestApplication({
-            controllers: [UserController],
-            providers: [
-                MockBean("IUserService", {
-                    findAll: jest.fn().mockResolvedValue([]),
-                    findById: jest.fn().mockResolvedValue(null),
-                    createUser: jest.fn().mockResolvedValue({ id: "1", name: "Test" }),
-                }),
-            ],
-            logger: MockLogger(),
+            scanDirs: ["controllers", "services"],
         });
     });
 
@@ -1263,17 +1584,16 @@ describe("UserController", () => {
         await app?.close();
     });
 
-    it("should return user by ID", async () => {
-        const response = await app.get("/users/1").expect(200);
-        expect(response.body.id).toBe("1");
+    it("should return health check", async () => {
+        const response = await app.get("/health");
+        expect(response.status).toBe(200);
     });
 });
 ```
 
-#### Unit Testing Services
+#### MockBean
 
 ```typescript
-import { UserService } from "./user.service";
 import { MockBean } from "@solumjs/testing";
 
 describe("UserService", () => {
@@ -1284,6 +1604,7 @@ describe("UserService", () => {
         mockUserRepo = {
             findById: jest.fn(),
             save: jest.fn(),
+            findByEmail: jest.fn(),
         };
         service = new UserService(mockUserRepo);
     });
@@ -1295,40 +1616,52 @@ describe("UserService", () => {
 });
 ```
 
----
-
-### WebSocket
+#### MockLogger
 
 ```typescript
-import { WebSocketHandler, StompHandler, MessageMapping, Connect, Disconnect, Error } from "@solumjs/websocket";
-import { Bean } from "@solumjs/core";
+import { MockLogger } from "@solumjs/testing";
 
-// Raw WebSocket handler
+const logger = MockLogger(); // silent logger for tests
+```
+
+---
+
+### @solumjs/websocket
+
+WebSocket handlers and STOMP protocol.
+
+#### WebSocket Handler
+
+```typescript
+import { WebSocketHandler, MessageMapping } from "@solumjs/websocket";
+
 @WebSocketHandler("/ws")
 export class ChatHandler {
 
-    @Connect
     onConnect(client: any) {
         console.log("Client connected");
     }
 
     @MessageMapping("/chat")
     onMessage(client: any, message: any) {
-        // Broadcast to all clients
+        // Broadcast to all connected clients
         this.broadcast({ type: "chat", data: message });
     }
 
-    @Disconnect
     onDisconnect(client: any) {
         console.log("Client disconnected");
     }
 }
+```
 
-// STOMP handler
+#### STOMP Handler
+
+```typescript
+import { StompHandler, MessageMapping } from "@solumjs/websocket";
+
 @StompHandler("/stomp")
 export class StompChatHandler {
 
-    @Connect
     onConnect(client: any) {
         client.subscribe("/topic/messages", (msg: any) => {
             client.send("/queue/user-" + client.id, {}, msg.body);
@@ -1342,15 +1675,29 @@ export class StompChatHandler {
 }
 ```
 
+#### STOMP Frame Parsing
+
+```typescript
+import { parseStompFrame, serializeStompFrame } from "@solumjs/websocket";
+
+const frame = parseStompFrame("SEND\ndestination:/queue/test\n\nHello World\n\0");
+// { command: "SEND", headers: { destination: "/queue/test" }, body: "Hello World" }
+
+const raw = serializeStompFrame({ command: "MESSAGE", headers: { destination: "/queue/test" }, body: "Hi" });
+```
+
 ---
 
-### Email
+### @solumjs/email
+
+SMTP email sending with template engine.
+
+#### SMTP Configuration
 
 ```typescript
 import { SmtpEmail, MailSend, MailService, TemplateEngine } from "@solumjs/email";
-import { Bean } from "@solumjs/core";
+import { Bean, inject } from "@solumjs/core";
 
-// Configure SMTP
 @Bean("ISmtpEmail")
 @SmtpEmail({
     host: "smtp.gmail.com",
@@ -1359,206 +1706,150 @@ import { Bean } from "@solumjs/core";
     auth: { user: "you@gmail.com", pass: "app-password" },
 })
 export class AppEmailClient {}
+```
 
-// Send emails
+#### Sending Emails
+
+```typescript
 @Bean("INotificationService")
 export class NotificationService {
 
-    constructor(
-        @inject("IMailService") private mailService: MailService,
-        @inject("ITemplateEngine") private templateEngine: TemplateEngine,
-    ) {}
+    constructor(@inject("IMailService") private mailService: MailService) {}
 
-    @MailSend({ to: "{email}", subject: "Welcome!", template: "welcome" })
     async sendWelcome(user: User) {
-        return { name: user.name, email: user.email };
+        await this.mailService.send({
+            to: user.email,
+            subject: "Welcome!",
+            html: `<h1>Hello ${user.name}!</h1><p>Welcome to our platform.</p>`,
+        });
+    }
+
+    async sendWithAttachments(user: User) {
+        await this.mailService.send({
+            to: user.email,
+            subject: "Your Report",
+            html: "<p>Please find attached your report.</p>",
+            attachments: [
+                { filename: "report.pdf", content: pdfBuffer, contentType: "application/pdf" },
+            ],
+        });
     }
 }
 ```
 
----
-
-### Configuration
-
-#### Application Bootstrap
+#### Template Engine
 
 ```typescript
-import { createApplication, createEnvConfig, loadEnv } from "@solumjs/config";
+import { TemplateEngine } from "@solumjs/email";
 
-loadEnv();
+const engine = new TemplateEngine();
 
-createApplication({
-    logger,
-    config: createEnvConfig(process.env),
-    scanBaseDir: __dirname,
-    scanDirs: ["controllers", "services", "repositories", "tasks", "advice"],
-    bodyLimitBytes: 10 * 1024 * 1024, // 10MB
-    onListen: (port) => console.log(`Server running on port ${port}`),
-});
+engine.register("welcome", "Hello {{name}}, welcome to {{platform}}!");
+
+const html = engine.render("welcome", { name: "John", platform: "SolumJS" });
+// "Hello John, welcome to SolumJS!"
 ```
 
-#### Environment Loading
+#### Test Mode
 
 ```typescript
-import { loadEnv } from "@solumjs/config";
+import { enableTestMode, getSentEmails, clearSentEmails } from "@solumjs/email";
 
-// Loads .env file from project root
-loadEnv();
+// Enable test mode (no actual emails sent)
+enableTestMode();
 
-// Then access via process.env
-const port = process.env.PORT || 3000;
-```
+// Send email (intercepted)
+await mailService.send({ to: "test@example.com", subject: "Test", html: "Hello" });
 
-#### YAML Configuration
+// Retrieve sent emails
+const emails = getSentEmails();
+expect(emails.length).toBe(1);
+expect(emails[0].to).toBe("test@example.com");
 
-```yaml
-# config/application.yml
-server:
-  port: 3000
-  host: 0.0.0.0
-
-database:
-  client: postgres
-  host: localhost
-  port: 5432
-  name: myapp
-
-jwt:
-  secret: ${JWT_SECRET}
-  expiresIn: 3600
-```
-
-#### @Value Decorator
-
-```typescript
-import { Value } from "@solumjs/config";
-import { Bean } from "@solumjs/core";
-
-@Bean("IAppConfig")
-export class AppConfig {
-    @Value("server.port")
-    port!: number;
-
-    @Value("database.host")
-    dbHost!: string;
-
-    @Value("jwt.secret")
-    jwtSecret!: string;
-}
-```
-
-#### Component Scanning
-
-```typescript
-createApplication({
-    scanBaseDir: __dirname,
-    scanDirs: [
-        "config/beans",      // Configuration classes
-        "repositories",      // Data repositories
-        "services",          // Business logic
-        "controllers",       // API endpoints
-        "advice",            // Exception handlers
-        "auth",              // Authentication
-        "tasks",             // Scheduled tasks
-    ],
-});
+// Clear
+clearSentEmails();
 ```
 
 ---
 
-### CLI
+### @solumjs/cli
+
+Command-line interface for scaffolding and utilities.
 
 #### Create New Project
 
 ```bash
-npx @solumjs/cli new my-app
+npx solum new my-app
 ```
 
-Generates:
+Generates a complete project structure with:
 - `package.json` with all dependencies
 - `tsconfig.json` configured for decorators
 - `jest.config.js` with path mapping
 - `src/app.ts` bootstrap file
-- `src/config/env.ts` environment validation
-- `src/config/logger.ts` structured logger
-- `src/controllers/health.controller.ts` health endpoint
-- `src/entities/user.entity.ts` user entity
-- `src/repositories/user.repository.ts` user repository
-- `src/services/user.service.ts` user service
-- `src/services/user-created.listener.ts` event listener
-- `src/dto/` request/response DTOs
-- `src/advice/global-exception-filter.ts` error handler
+- `src/controllers/`, `src/services/`, `src/repositories/`
+- `src/entities/`, `src/dto/`, `src/advice/`
 - `src/database/` migration and schema sync scripts
 
 #### Generate Files
 
 ```bash
-# Controllers
-npx @solumjs/cli generate controller Product
+solum generate controller Product    # Creates product.controller.ts
+solum generate service Product       # Creates product.service.ts
+solum generate entity Product        # Creates product.entity.ts
+solum generate repository Product    # Creates product.repository.ts
+solum generate dto CreateProduct     # Creates create-product.dto.ts
+solum generate middleware Auth       # Creates auth.middleware.ts
+solum generate guard ApiKey          # Creates api-key.guard.ts
+solum generate listener ProductCreated  # Creates product-created.listener.ts
+solum generate filter GlobalException   # Creates global-exception.filter.ts
+```
 
-# Services
-npx @solumjs/cli generate service Product
+#### Run Tests
 
-# Entities
-npx @solumjs/cli generate entity Product
+```bash
+solum test
+```
 
-# Repositories
-npx @solumjs/cli generate repository Product
+#### Run Migrations
 
-# DTOs
-npx @solumjs/cli generate dto CreateProduct
+```bash
+solum db:migrate
+```
 
-# Middleware
-npx @solumjs/cli generate middleware Auth
+#### Show Version
 
-# Guards
-npx @solumjs/cli generate guard ApiKey
-
-# Event Listeners
-npx @solumjs/cli generate listener ProductCreated
-
-# Exception Filters
-npx @solumjs/cli generate filter GlobalException
+```bash
+solum --version
 ```
 
 ---
 
 ## Example Application
 
-The [`backend-example`](./packages/backend-example) package demonstrates a complete API with:
+The [`backend-example`](./packages/backend-example) package demonstrates a complete API.
 
-### Application Bootstrap
-
+**src/app.ts:**
 ```typescript
-// src/app.ts
 import "@solumjs/core";
 import { createApplication, createEnvConfig, loadEnv } from "@solumjs/config";
-import { env } from "@config/env";
-import { logger } from "@config/logger";
-import { printStartupBanner } from "@config/startup-banner";
 
 loadEnv();
 
 createApplication({
-    logger,
-    config: createEnvConfig(env),
+    config: createEnvConfig(process.env),
     scanBaseDir: __dirname,
     scanDirs: ["config/beans", "repositories", "services", "controllers", "advice", "auth", "tasks"],
     bodyLimitBytes: 10 * 1024,
-    onListen: printStartupBanner,
 });
 ```
 
-### Controllers
-
+**src/controllers/user.controller.ts:**
 ```typescript
-// src/controllers/user.controller.ts
-import { RestController, Get, Post, Put, Delete, Body, Param, Query, UseGuards, CurrentUser, ResponseStatus } from "@solumjs/http";
+import { RestController, Get, Post, Put, Delete, Body, Param, UseGuards, CurrentUser, ResponseStatus } from "@solumjs/http";
 import { JwtAuthGuard, RolesGuard, Roles } from "@solumjs/auth";
-import { Validated } from "@solumjs/validation";
 import { Cacheable, CacheEvict } from "@solumjs/cache";
 import { CreateUserDto } from "@dto/create-user.dto";
-import { UpdateRoleDto } from "@dto/update-role.dto";
 
 @RestController("/users")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1567,153 +1858,24 @@ export class UserController {
 
     @Get("/")
     @Roles("ADMIN")
-    async listUsers() {
-        return this.userService.findAll();
-    }
+    async listUsers() { return this.userService.findAll(); }
 
     @Get("/:id")
     @Cacheable({ key: "user:{id}", ttl: 300 })
-    async getUser(@Param("id") id: string) {
-        return this.userService.findById(id);
-    }
+    async getUser(@Param("id") id: string) { return this.userService.findById(id); }
 
     @Post("/")
     @ResponseStatus(201)
-    @Validated(CreateUserDto)
-    async createUser(@Body() dto: CreateUserDto) {
-        return this.userService.createUser(dto);
-    }
-
-    @Put("/:id/role")
-    @Roles("ADMIN")
-    @CacheEvict({ key: "user:{id}" })
-    async updateRole(@Param("id") id: string, @Body() dto: UpdateRoleDto) {
-        return this.userService.updateRole(id, dto);
-    }
+    async createUser(@Body() dto: CreateUserDto) { return this.userService.createUser(dto); }
 
     @Delete("/:id")
     @Roles("ADMIN")
     @CacheEvict({ key: "user:{id}" })
-    async deleteUser(@Param("id") id: string) {
-        return this.userService.deleteUser(id);
-    }
+    async deleteUser(@Param("id") id: string) { return this.userService.deleteUser(id); }
 }
 ```
 
-### Entities
-
-```typescript
-// src/entities/user.entity.ts
-import { Entity, Column, ColumnType, PrimaryGeneratedColumn, CreatedAtColumn } from "@solumjs/orm";
-
-@Entity("users")
-export class User {
-    @PrimaryGeneratedColumn(ColumnType.UUID)
-    public readonly id!: string;
-
-    @Column({ type: ColumnType.VARCHAR, length: 255 })
-    public name!: string;
-
-    @Column({ type: ColumnType.VARCHAR, length: 255, unique: true })
-    public email!: string;
-
-    @Column({ type: ColumnType.VARCHAR, length: 255, nullable: true })
-    public passwordHash?: string;
-
-    @Column({ type: ColumnType.VARCHAR, length: 32, default: "'USER'" })
-    public role!: string;
-
-    @CreatedAtColumn()
-    public readonly createdAt!: Date;
-
-    constructor(id: string, name: string, email: string, role: string = "USER") {
-        this.id = id;
-        this.name = name;
-        this.email = email;
-        this.role = role;
-    }
-}
-```
-
-### Services
-
-```typescript
-// src/services/user.service.ts
-import { Bean, inject, ConflictException, NotFoundException } from "@solumjs/core";
-import { hashPassword } from "@solumjs/auth";
-import { randomUUID } from "crypto";
-
-@Bean("IUserService")
-export class UserService implements IUserService {
-    constructor(
-        @inject("IUserRepository") private readonly userRepository: IUserRepository,
-    ) {}
-
-    async createUser(dto: CreateUserDto): Promise<User> {
-        const existing = await this.userRepository.findByEmail(dto.email);
-        if (existing) {
-            throw new ConflictException(`Email ${dto.email} is already registered`);
-        }
-
-        const id = randomUUID();
-        const user = new User(id, dto.name, dto.email);
-        if (dto.password) {
-            user.passwordHash = hashPassword(dto.password);
-        }
-
-        return this.userRepository.save(user);
-    }
-
-    async findById(id: string): Promise<User> {
-        const user = await this.userRepository.findById(id);
-        if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-        return user;
-    }
-}
-```
-
-### Event Listeners
-
-```typescript
-// src/services/user-created.listener.ts
-import { OnEvent } from "@solumjs/events";
-import { logger } from "@config/logger";
-
-export class UserCreatedListener {
-    @OnEvent("USER_CREATED")
-    handleUserCreated(payload: { userId: string; email: string }) {
-        logger.info({ userId: payload.userId }, "User created event received");
-    }
-}
-```
-
-### Environment Validation
-
-```typescript
-// src/config/env.ts
-import { loadEnv } from "@solumjs/config";
-
-loadEnv();
-
-const SCHEMA = {
-    NODE_ENV: { required: true, choices: ["development", "production", "test"] },
-    PORT: { default: 3000, isPort: true },
-    JWT_SECRET: { required: true },
-    DB_CLIENT: { default: "postgres", choices: ["postgres", "mysql", "mssql", "oracle", "sqlite"] },
-    DB_HOST: { default: "localhost" },
-    DB_PORT: { default: 5432, isPort: true },
-    DB_NAME: { required: true },
-    DB_USER: { required: true },
-    DB_PASSWORD: { required: true },
-};
-
-export const env = buildEnv(); // validates all env vars against schema
-```
-
-### NPM Scripts
-
+**NPM Scripts:**
 ```json
 {
     "scripts": {
@@ -1722,76 +1884,14 @@ export const env = buildEnv(); // validates all env vars against schema
         "start": "node -r ./prod-paths.js dist/app.js",
         "test": "jest",
         "migrate": "ts-node -r tsconfig-paths/register src/database/migrate.ts up",
-        "migrate:status": "ts-node -r tsconfig-paths/register src/database/migrate.ts status",
         "migrate:down": "ts-node -r tsconfig-paths/register src/database/migrate.ts down",
+        "migrate:status": "ts-node -r tsconfig-paths/register src/database/migrate.ts status",
+        "migrate:generate": "ts-node -r tsconfig-paths/register src/database/generate-migration.ts",
         "schema:sync": "ts-node -r tsconfig-paths/register src/database/sync-schema.ts validate",
         "schema:sync:update": "ts-node -r tsconfig-paths/register src/database/sync-schema.ts update"
     }
 }
 ```
-
----
-
-## Dependency Graph
-
-```
-@solumjs/config
-    |
-    +-- @solumjs/core (container, decorators)
-    |
-    +-- @solumjs/http (router, decorators)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/orm (entity, query builder)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/database (repository, transaction)
-    |       +-- @solumjs/orm
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/auth (JWT, guards)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/cache (caching decorators)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/events (event bus)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/schedule (cron jobs)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/validation (validators)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/middlewares (security, errors)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/aop (aspects)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/testing (mocks, test app)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/websocket (STOMP, WS)
-    |       \-- @solumjs/core
-    |
-    +-- @solumjs/email (SMTP, templates)
-    |       \-- @solumjs/core
-    |
-    \-- @solumjs/cli (scaffolding)
-            (standalone)
-```
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -am 'Add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Open a Pull Request
 
 ---
 

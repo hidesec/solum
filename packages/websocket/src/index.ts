@@ -185,9 +185,31 @@ function timingSafeEqual(a: string, b: string): boolean {
     return crypto.timingSafeEqual(bufA, bufB);
 }
 
+const wsUpgradeLimits = new Map<string, { count: number; resetAt: number }>();
+const WS_UPGRADE_MAX = 30;
+const WS_UPGRADE_WINDOW_MS = 60 * 1000;
+
+function checkWsUpgradeRateLimit(ip: string): boolean {
+    const now = Date.now();
+    let bucket = wsUpgradeLimits.get(ip);
+    if (!bucket || bucket.resetAt <= now) {
+        bucket = { count: 0, resetAt: now + WS_UPGRADE_WINDOW_MS };
+        wsUpgradeLimits.set(ip, bucket);
+    }
+    bucket.count++;
+    return bucket.count <= WS_UPGRADE_MAX;
+}
+
 export function mountWebSocket(server: http.Server, handlers: Map<string, WsHandler>, options: WebSocketOptions = {}): void {
     server.on("upgrade", (req, socket, head) => {
         if (!validateOrigin(req)) {
+            socket.destroy();
+            return;
+        }
+
+        const ip = req.socket.remoteAddress ?? "unknown";
+        if (!checkWsUpgradeRateLimit(ip)) {
+            socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
             socket.destroy();
             return;
         }
@@ -400,7 +422,8 @@ case "SUBSCRIBE": {
                         const destination = frame.headers["destination"];
                         const id = frame.headers["id"] || destination;
                         if (destination) {
-                            if (destination.startsWith("/internal/") || destination.startsWith("/system/")) {
+                            const destLower = destination.toLowerCase();
+                            if (destLower.startsWith("/internal/") || destLower.startsWith("/system/")) {
                                 client.send(serializeStompFrame("ERROR", { message: "Access denied to internal destination" }));
                                 break;
                             }

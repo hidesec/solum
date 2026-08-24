@@ -171,30 +171,37 @@ function isPrivateIP(ip: string): boolean {
     if (clean === "127.0.0.1" || clean === "::1" || clean === "0.0.0.0") return true;
     if (clean === "localhost") return true;
     if (clean.startsWith("fe80:")) return true;
-    const parts = clean.split(".");
+    if (clean.startsWith("fc") || clean.startsWith("fd")) return true;
+
+    let ipv4 = clean;
+    if (clean.startsWith("::ffff:")) {
+        const v4 = clean.slice(7);
+        if (v4.includes(".")) {
+            ipv4 = v4;
+        } else if (v4.includes(":")) {
+            const groups = v4.split(":");
+            const lastTwo = groups.slice(-2);
+            const hex = lastTwo.join("").padStart(8, "0");
+            const num = parseInt(hex, 16);
+            ipv4 = [(num >>> 24) & 0xff, (num >>> 16) & 0xff, (num >>> 8) & 0xff, num & 0xff].join(".");
+        }
+    }
+
+    const parts = ipv4.split(".");
     if (parts.length === 4) {
-        const [a, b] = parts.map(Number);
+        const octets = parts.map(Number);
+        if (octets.some((o) => !Number.isFinite(o) || o < 0 || o > 255)) return false;
+        const [a, b] = octets;
         if (a === 10) return true;
         if (a === 172 && b >= 16 && b <= 31) return true;
         if (a === 192 && b === 168) return true;
-        if (a === 169 && parts[1] === "254") return true;
-    }
-    if (clean.startsWith("::ffff:")) {
-        const v4 = clean.slice(7);
-        const v4Parts = v4.split(".");
-        if (v4Parts.length === 4) {
-            const [a, b] = v4Parts.map(Number);
-            if (a === 10) return true;
-            if (a === 172 && b >= 16 && b <= 31) return true;
-            if (a === 192 && b === 168) return true;
-            if (a === 169 && v4Parts[1] === "254") return true;
-            if (a === 127) return true;
-        }
+        if (a === 169 && octets[1] === 254) return true;
+        if (a === 127) return true;
     }
     return false;
 }
 
-function resolveAndCheck(hostname: string): Promise<void> {
+function resolveAndCheck(hostname: string): Promise<string> {
     return new Promise((resolve, reject) => {
         dns.lookup(hostname, { all: true }, (err, addresses) => {
             if (err) {
@@ -207,7 +214,8 @@ function resolveAndCheck(hostname: string): Promise<void> {
                     return;
                 }
             }
-            resolve();
+            const pinned = addresses[0];
+            resolve(pinned.address);
         });
     });
 }
@@ -230,7 +238,7 @@ function makeRequest(options: RequestOptions, redirectCount = 0): Promise<unknow
             return;
         }
 
-        resolveAndCheck(hostname).then(() => {
+        resolveAndCheck(hostname).then((pinnedIp) => {
             const isHttps = url.protocol === "https:";
             const client = isHttps ? https : http;
 
@@ -246,7 +254,8 @@ function makeRequest(options: RequestOptions, redirectCount = 0): Promise<unknow
 
             const req = client.request(
                 {
-                    hostname: url.hostname,
+                    hostname: pinnedIp,
+                    servername: url.hostname,
                     port: url.port || (isHttps ? 443 : 80),
                     path: url.pathname + url.search,
                     method: options.method,

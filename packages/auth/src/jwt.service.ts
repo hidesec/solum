@@ -48,7 +48,11 @@ export class JwtService implements IJwtService {
 
     verify(token: string): JwtPayload | null {
         const options: JwtVerifyOptions = { issuer: getFrameworkConfig().get("JWT_ISSUER") };
-        return verifyJwt<JwtPayload>(token, getJwtSecret(), options);
+        const payload = verifyJwt<JwtPayload>(token, getJwtSecret(), options);
+        if (payload?.jti && this.isRevoked(payload.jti)) {
+            return null;
+        }
+        return payload;
     }
 
     revoke(token: string): void {

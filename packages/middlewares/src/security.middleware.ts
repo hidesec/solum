@@ -41,10 +41,6 @@ function cors(options: CorsOptions): SolumjsMiddleware {
         } else if (requestOrigin && requestOrigin === allowedOrigin) {
             res.raw.setHeader("access-control-allow-origin", requestOrigin);
             res.raw.setHeader("access-control-allow-credentials", String(options.credentials));
-        } else if (requestOrigin) {
-            res.raw.setHeader("access-control-allow-origin", "null");
-        } else {
-            res.raw.setHeader("access-control-allow-origin", allowedOrigin);
         }
 
         if (req.method === "OPTIONS") {

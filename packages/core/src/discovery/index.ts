@@ -16,6 +16,7 @@ export interface ServiceRegistryOptions {
     host?: string;
     heartbeatIntervalMs?: number;
     instanceTtlMs?: number;
+    authToken?: string;
 }
 
 const instances = new Map<string, Map<string, ServiceInstance>>();
@@ -101,8 +102,18 @@ export function startRegistry(options: ServiceRegistryOptions = {}): http.Server
     const host = options.host || "0.0.0.0";
     const heartbeatInterval = options.heartbeatIntervalMs || 30000;
     const instanceTtl = options.instanceTtlMs || 90000;
+    const authToken = options.authToken;
 
     registryServer = http.createServer((req, res) => {
+        if (authToken) {
+            const authHeader = req.headers.authorization;
+            if (!authHeader || authHeader !== `Bearer ${authToken}`) {
+                res.writeHead(401, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ error: "Unauthorized" }));
+                return;
+            }
+        }
+
         const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
         if (req.method === "POST" && url.pathname === "/register") {
@@ -110,8 +121,21 @@ export function startRegistry(options: ServiceRegistryOptions = {}): http.Server
             req.on("data", (chunk) => (body += chunk));
             req.on("end", () => {
                 try {
-                    const instance: ServiceInstance = JSON.parse(body);
-                    instance.lastHeartbeat = Date.now();
+                    const raw = JSON.parse(body);
+                    if (!raw.serviceId || !raw.host || typeof raw.port !== "number") {
+                        res.writeHead(400, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ error: "Missing required fields: serviceId, host, port" }));
+                        return;
+                    }
+                    const instance: ServiceInstance = {
+                        serviceId: String(raw.serviceId).slice(0, 128),
+                        host: String(raw.host).slice(0, 256),
+                        port: Math.max(1, Math.min(65535, Math.floor(raw.port))),
+                        metadata: raw.metadata && typeof raw.metadata === "object" ? raw.metadata : undefined,
+                        status: "UP",
+                        registeredAt: Date.now(),
+                        lastHeartbeat: Date.now(),
+                    };
                     registerInstance(instance);
                     res.writeHead(200, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({ status: "OK" }));

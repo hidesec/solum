@@ -59,17 +59,21 @@ export function getMailSendDeclarations(target: Function): Array<{ propertyKey: 
     return Reflect.getOwnMetadata(MAIL_SEND_METADATA, target) || [];
 }
 
+function sanitizeHeaderValue(value: string): string {
+    return value.replace(/[\r\n]/g, "");
+}
+
 function buildMimeMessage(options: EmailOptions, from: string): string {
     const boundary = `----=_Part_${crypto.randomBytes(16).toString("hex")}`;
     const messageId = `<${crypto.randomUUID()}@solumjs>`;
     const date = new Date().toUTCString();
 
     const headers = [
-        `From: ${from}`,
-        `To: ${Array.isArray(options.to) ? options.to.join(", ") : options.to}`,
-        options.cc ? `Cc: ${Array.isArray(options.cc) ? options.cc.join(", ") : options.cc}` : null,
-        options.bcc ? `Bcc: ${Array.isArray(options.bcc) ? options.bcc.join(", ") : options.bcc}` : null,
-        `Subject: ${options.subject}`,
+        `From: ${sanitizeHeaderValue(from)}`,
+        `To: ${sanitizeHeaderValue(Array.isArray(options.to) ? options.to.join(", ") : options.to)}`,
+        options.cc ? `Cc: ${sanitizeHeaderValue(Array.isArray(options.cc) ? options.cc.join(", ") : options.cc)}` : null,
+        options.bcc ? `Bcc: ${sanitizeHeaderValue(Array.isArray(options.bcc) ? options.bcc.join(", ") : options.bcc)}` : null,
+        `Subject: ${sanitizeHeaderValue(options.subject)}`,
         `Date: ${date}`,
         `Message-ID: ${messageId}`,
         `MIME-Version: 1.0`,

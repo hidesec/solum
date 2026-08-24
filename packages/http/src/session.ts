@@ -58,7 +58,7 @@ export interface SessionOptions {
 export function createSessionMiddleware(options: SessionOptions = {}): SolumjsMiddleware {
     const store = options.store ?? new MemorySessionStore(options.ttlMs);
     const cookieName = options.cookieName ?? "solum.sid";
-    const cookieDefaults: Partial<CookieOptions> = { httpOnly: true, sameSite: "Lax", path: "/" };
+    const cookieDefaults: Partial<CookieOptions> = { httpOnly: true, sameSite: "Lax", path: "/", secure: process.env.NODE_ENV === "production" };
 
     return (req, res, next) => {
         const cookies = req.cookies ?? {};

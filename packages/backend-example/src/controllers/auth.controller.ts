@@ -1,6 +1,7 @@
 import { IAuthService } from "@services/auth.service.interface";
 import { AutoWired, UnauthorizedException } from "@solumjs/core";
-import { Body, Post, ResponseStatus, RestController, SolumjsRequest, Req, Valid } from "@solumjs/http";
+import { Body, Post, ResponseStatus, RestController, SolumjsRequest, SolumjsResponse, Req, Res, Valid } from "@solumjs/http";
+import { rotateSessionId } from "@solumjs/http";
 import { LoginRequestDto } from "@dto/login.dto";
 import { RefreshTokenDto } from "@dto/refresh-token.dto";
 
@@ -40,11 +41,12 @@ export class AuthController {
 
     @Post("/login")
     @ResponseStatus(200)
-    async login(@Valid() @Body() dto: LoginRequestDto, @Req() req: SolumjsRequest) {
+    async login(@Valid() @Body() dto: LoginRequestDto, @Req() req: SolumjsRequest, @Res() res: SolumjsResponse) {
         checkLoginRateLimit(dto.email);
         try {
             const result = await this.authService.login(dto);
             recordLoginSuccess(dto.email);
+            rotateSessionId(res);
             req.log.info({ email: dto.email }, "Login successful");
             return result;
         } catch (err) {

@@ -123,6 +123,9 @@ function createWsClient(id: string, socket: net.Socket): WsClient {
     return client;
 }
 
+const MAX_WS_FRAME_SIZE = 1024 * 1024;
+const MAX_STOMP_FRAME_SIZE = 256 * 1024;
+
 function parseFrame(buffer: Buffer): { opcode: number; payload: Buffer; length: number } | null {
     if (buffer.length < 2) return null;
 
@@ -143,6 +146,8 @@ function parseFrame(buffer: Buffer): { opcode: number; payload: Buffer; length: 
         offset = 10;
     }
 
+    if (payloadLength > MAX_WS_FRAME_SIZE) return null;
+
     if (isMasked) offset += 4;
 
     const totalLength = offset + payloadLength;
@@ -160,11 +165,25 @@ function parseFrame(buffer: Buffer): { opcode: number; payload: Buffer; length: 
     return { opcode, payload, length: totalLength };
 }
 
-export function mountWebSocket(server: http.Server, handlers: Map<string, WsHandler>): void {
+export interface WebSocketOptions {
+    authToken?: string;
+}
+
+export function mountWebSocket(server: http.Server, handlers: Map<string, WsHandler>, options: WebSocketOptions = {}): void {
     server.on("upgrade", (req, socket, head) => {
         if (!validateOrigin(req)) {
             socket.destroy();
             return;
+        }
+
+        if (options.authToken) {
+            const url = new URL(req.url || "/", `http://${req.headers.host}`);
+            const token = url.searchParams.get("token") ?? req.headers.authorization?.replace("Bearer ", "");
+            if (token !== options.authToken) {
+                socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+                socket.destroy();
+                return;
+            }
         }
 
         const url = new URL(req.url || "/", `http://${req.headers.host}`);
@@ -235,6 +254,7 @@ export interface StompFrame {
 }
 
 export function parseStompFrame(raw: string): StompFrame | null {
+    if (raw.length > MAX_STOMP_FRAME_SIZE) return null;
     const lines = raw.split("\r\n");
     if (lines.length === 0) return null;
 

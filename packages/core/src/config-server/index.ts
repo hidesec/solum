@@ -9,6 +9,7 @@ export interface ConfigServerOptions {
     configDir?: string;
     gitUri?: string;
     refreshIntervalMs?: number;
+    authToken?: string;
 }
 
 export interface ConfigRepository {
@@ -16,25 +17,39 @@ export interface ConfigRepository {
     getPropertiesByUri(uri: string): Promise<Record<string, unknown>>;
 }
 
+const SAFE_NAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
+
+function sanitizeName(name: string): string | null {
+    const clean = name.replace(/[^a-zA-Z0-9._-]/g, "");
+    if (clean !== name || clean.includes("..") || clean.length > 128) return null;
+    return clean;
+}
+
 export class FileSystemConfigRepository implements ConfigRepository {
     private configDir: string;
 
     constructor(configDir: string) {
-        this.configDir = configDir;
+        this.configDir = path.resolve(configDir);
     }
 
     async getProperties(application: string, profile: string, _label: string): Promise<Record<string, unknown>> {
+        const safeApp = sanitizeName(application);
+        const safeProfile = sanitizeName(profile);
+        if (!safeApp || !safeProfile) {
+            throw new Error("Invalid application or profile name");
+        }
+
         const results: Record<string, unknown> = {};
 
-        const baseFile = path.join(this.configDir, `${application}.json`);
-        if (fs.existsSync(baseFile)) {
+        const baseFile = path.join(this.configDir, `${safeApp}.json`);
+        if (fs.existsSync(baseFile) && baseFile.startsWith(this.configDir)) {
             const content = fs.readFileSync(baseFile, "utf8");
             Object.assign(results, JSON.parse(content));
         }
 
-        if (profile) {
-            const profileFile = path.join(this.configDir, `${application}-${profile}.json`);
-            if (fs.existsSync(profileFile)) {
+        if (safeProfile) {
+            const profileFile = path.join(this.configDir, `${safeApp}-${safeProfile}.json`);
+            if (fs.existsSync(profileFile) && profileFile.startsWith(this.configDir)) {
                 const content = fs.readFileSync(profileFile, "utf8");
                 Object.assign(results, JSON.parse(content));
             }
@@ -44,8 +59,12 @@ export class FileSystemConfigRepository implements ConfigRepository {
     }
 
     async getPropertiesByUri(uri: string): Promise<Record<string, unknown>> {
-        if (fs.existsSync(uri)) {
-            const content = fs.readFileSync(uri, "utf8");
+        const resolved = path.resolve(this.configDir, uri);
+        if (!resolved.startsWith(this.configDir)) {
+            throw new Error("Access denied: path outside config directory");
+        }
+        if (fs.existsSync(resolved)) {
+            const content = fs.readFileSync(resolved, "utf8");
             return JSON.parse(content);
         }
         return {};
@@ -82,8 +101,18 @@ export class ConfigServer {
         return new Promise((resolve) => {
             const port = this.options.port || 8888;
             const host = this.options.host || "0.0.0.0";
+            const authToken = this.options.authToken;
 
             this.server = http.createServer((req, res) => {
+                if (authToken) {
+                    const authHeader = req.headers.authorization;
+                    if (!authHeader || authHeader !== `Bearer ${authToken}`) {
+                        res.writeHead(401, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ error: "Unauthorized" }));
+                        return;
+                    }
+                }
+
                 const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
                 if (req.method === "GET" && url.pathname.startsWith("/")) {

@@ -33,8 +33,19 @@ interface CorsOptions {
 
 function cors(options: CorsOptions): SolumjsMiddleware {
     return (req: SolumjsRequest, res: SolumjsResponse, next: SolumjsNext) => {
-        res.raw.setHeader("access-control-allow-origin", options.origin);
-        res.raw.setHeader("access-control-allow-credentials", String(options.credentials));
+        const requestOrigin = req.headers.origin;
+        const allowedOrigin = options.origin;
+
+        if (allowedOrigin === "*") {
+            res.raw.setHeader("access-control-allow-origin", "*");
+        } else if (requestOrigin && requestOrigin === allowedOrigin) {
+            res.raw.setHeader("access-control-allow-origin", requestOrigin);
+            res.raw.setHeader("access-control-allow-credentials", String(options.credentials));
+        } else if (requestOrigin) {
+            res.raw.setHeader("access-control-allow-origin", "null");
+        } else {
+            res.raw.setHeader("access-control-allow-origin", allowedOrigin);
+        }
 
         if (req.method === "OPTIONS") {
             res.raw.setHeader("access-control-allow-methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");

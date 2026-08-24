@@ -9,6 +9,25 @@ interface ChatMessage {
     user?: string;
 }
 
+const HTML_ESCAPE_MAP: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+};
+
+function escapeHtml(str: string): string {
+    return str.replace(/[&<>"']/g, (c) => HTML_ESCAPE_MAP[c] ?? c);
+}
+
+const MAX_CHAT_FIELD_LENGTH = 500;
+
+function sanitizeField(value: string | undefined, fallback: string): string {
+    if (!value) return fallback;
+    return escapeHtml(value.slice(0, MAX_CHAT_FIELD_LENGTH));
+}
+
 const rooms = new Map<string, Set<WsClient>>();
 
 /**
@@ -52,8 +71,8 @@ export class ChatHandler implements WsHandler {
                             const broadcast = JSON.stringify({
                                 type: "message",
                                 room: currentRoom,
-                                user: parsed.user ?? "anonymous",
-                                content: parsed.content ?? "",
+                                user: sanitizeField(parsed.user, "anonymous"),
+                                content: sanitizeField(parsed.content, ""),
                                 timestamp: new Date().toISOString(),
                             });
                             for (const member of roomSet) {

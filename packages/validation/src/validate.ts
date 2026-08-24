@@ -22,11 +22,14 @@ function appliesToGroups(rule: ValidationRule, selected: string[] | undefined): 
     return rule.groups.some((group) => selected.includes(group));
 }
 
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype", "toString", "valueOf"]);
+
 export function toInstance<T extends object>(ctor: new (...args: any[]) => T, plain: unknown): T {
     const instance = Object.create(ctor.prototype) as T;
 
     if (plain !== null && typeof plain === "object") {
         for (const [key, value] of Object.entries(plain)) {
+            if (DANGEROUS_KEYS.has(key)) continue;
             (instance as Record<string, unknown>)[key] = value;
         }
     }

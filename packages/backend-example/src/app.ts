@@ -10,7 +10,7 @@ createApplication({
     logger,
     config: createEnvConfig(env),
     scanBaseDir: __dirname,
-    scanDirs: ["repositories", "services", "config/beans", "controllers", "advice", "auth", "tasks"],
+    scanDirs: ["repositories", "services", "config/beans", "controllers", "advice", "auth", "tasks", "websocket"],
     bodyLimitBytes: 10 * 1024,
     onListen: printStartupBanner,
 });

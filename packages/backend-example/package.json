@@ -26,6 +26,7 @@
     "@solumjs/orm": "^0.1.0",
     "@solumjs/schedule": "^0.1.0",
     "@solumjs/validation": "^0.1.0",
+    "@solumjs/websocket": "^0.1.0",
     "pg": "^8.23.0",
     "@solumjs/aop": "^0.1.0"
   },

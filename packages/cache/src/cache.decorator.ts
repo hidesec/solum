@@ -116,13 +116,34 @@ export class CacheManager {
 
 export const cacheManager = new CacheManager();
 
-function buildCacheKey(cacheName: string, joinPoint: JoinPoint): string {
+export function resolveCacheKey(template: string, args: any[], methodParams?: string[]): string {
+    return template.replace(/\{(\w+)\}/g, (match, name) => {
+        if (methodParams) {
+            const namedIndex = methodParams.indexOf(name);
+            if (namedIndex !== -1 && namedIndex < args.length) {
+                const value = args[namedIndex];
+                return value === undefined || value === null ? "null" : String(value);
+            }
+        }
+        const posIndex = parseInt(name, 10);
+        if (!isNaN(posIndex) && posIndex < args.length) {
+            const value = args[posIndex];
+            return value === undefined || value === null ? "null" : String(value);
+        }
+        return `_MISSING_${name}_`;
+    });
+}
+
+function buildCacheKey(cacheName: string, joinPoint: JoinPoint, keyExpression?: string): string {
+    if (keyExpression) {
+        return `${cacheName}:${resolveCacheKey(keyExpression, joinPoint.args)}`;
+    }
     return `${cacheName}:${joinPoint.className}.${joinPoint.methodName}:${JSON.stringify(joinPoint.args)}`;
 }
 
-export function Cacheable(cacheName: string, ttlSeconds: number = 60) {
+export function Cacheable(cacheName: string, ttlSeconds: number = 60, keyExpression?: string) {
     return Around(async (joinPoint, proceed) => {
-        const key = buildCacheKey(cacheName, joinPoint);
+        const key = buildCacheKey(cacheName, joinPoint, keyExpression);
 
         const cached = await cacheManager.get(key);
         if (cached !== undefined) {
@@ -143,10 +164,10 @@ export function CacheEvict(cacheName: string) {
     });
 }
 
-export function CachePut(cacheName: string, ttlSeconds: number = 60) {
+export function CachePut(cacheName: string, ttlSeconds: number = 60, keyExpression?: string) {
     return Around(async (joinPoint, proceed) => {
         const result = await proceed();
-        const key = buildCacheKey(cacheName, joinPoint);
+        const key = buildCacheKey(cacheName, joinPoint, keyExpression);
         await cacheManager.set(key, result, ttlSeconds);
         return result;
     });

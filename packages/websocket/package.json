@@ -10,13 +10,17 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "jest"
   },
   "dependencies": {
     "@solumjs/core": "^0.1.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^26.2.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.12",
     "typescript": "^6.0.3"
   },
   "publishConfig": {

@@ -518,6 +518,21 @@ export function clear(): void {
     resolutionListeners.clear();
 }
 
+function listBeans(): Array<{ token: string; scope: string }> {
+    const result: Array<{ token: string; scope: string }> = [];
+    for (const [token, entries] of definitions.entries()) {
+        for (const entry of entries) {
+            const reg = entry.registration;
+            const scope = "scope" in reg ? reg.scope ?? "singleton" : "singleton";
+            result.push({
+                token: String(token),
+                scope,
+            });
+        }
+    }
+    return result;
+}
+
 export const container = {
     register,
     registerBean,
@@ -527,5 +542,6 @@ export const container = {
     registerBeanPostProcessor,
     registerBeanFactoryPostProcessor,
     runWithRequestContext,
+    listBeans,
     clear,
 };

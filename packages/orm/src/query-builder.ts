@@ -308,17 +308,24 @@ export class QueryBuilder<T extends object> {
             this.orders.push({ column: assertSafeIdentifier(sort.column), direction: sort.direction });
         });
 
-        const { sql: whereSql, params: whereParams } = this.buildWhereClause(1);
-        const countSql = `SELECT ${getDatabaseDriver().dialect.countExpression()} AS count FROM ${this.table}${this.buildJoinClause()}${whereSql}`;
-        const countResult = await getQueryRunner().query(countSql, whereParams);
-        const totalElements = Number(countResult.rows[0]?.count ?? 0);
-
-        if (totalElements === 0) {
-            return buildPage([], request, 0);
-        }
+        const savedSelectColumns = this.selectColumns;
+        const countOverExpr = getDatabaseDriver().dialect.countOverExpression();
+        this.selectColumns = [...savedSelectColumns, `${countOverExpr} AS __total_count__`];
 
         this.limit(request.size).offset(request.offset);
-        const content = await this.get();
+        const { sql, params } = this.toSQL();
+        const result = await getQueryRunner().query(sql, params);
+        this.selectColumns = savedSelectColumns;
+
+        const rows = result.rows as Record<string, unknown>[];
+        const totalElements = rows.length > 0 ? Number(rows[0].__total_count__ ?? 0) : 0;
+
+        const cleanRows = rows.map((row) => {
+            const { __total_count__, ...rest } = row;
+            return rest;
+        });
+
+        const content = cleanRows.map((row) => hydrateEntity(this.entityClass, row));
         return buildPage(content, request, totalElements);
     }
 

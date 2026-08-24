@@ -1,6 +1,7 @@
 import "@solumjs/core";
 import { HttpAdapter, getParamType, getParamsMetadata, getRegisteredControllers, getRoutesMetadata, ParamSource } from "@solumjs/http";
 import { ValidationRule, getValidationRules } from "@solumjs/validation";
+import { getAllApiPropertyOptions, ApiPropertyOptions } from "./api-property.decorator";
 
 export interface DocsOptions {
     enabled?: boolean;
@@ -80,6 +81,7 @@ function applyRuleConstraints(schema: SchemaObject, rules: ValidationRule[]): vo
 
 export function buildDtoSchema(dtoClass: Function): SchemaObject {
     const rules = getValidationRules(dtoClass);
+    const apiProperties = getAllApiPropertyOptions(dtoClass);
     const properties: Record<string, SchemaObject> = {};
     const required: string[] = [];
 
@@ -87,6 +89,12 @@ export function buildDtoSchema(dtoClass: Function): SchemaObject {
         const designType = Reflect.getMetadata("design:type", dtoClass.prototype, property);
         const schema: SchemaObject = mapDesignType(designType);
         applyRuleConstraints(schema, ruleList);
+
+        const apiProp = apiProperties.get(property);
+        if (apiProp) {
+            applyApiPropertyOverrides(schema, apiProp);
+        }
+
         properties[property] = schema;
         if (!ruleList.some((rule) => rule.name === "isOptional")) {
             required.push(property);
@@ -96,6 +104,24 @@ export function buildDtoSchema(dtoClass: Function): SchemaObject {
     const result: SchemaObject = { type: "object", properties };
     if (required.length > 0) result.required = [...required].sort();
     return result;
+}
+
+function applyApiPropertyOverrides(schema: SchemaObject, options: ApiPropertyOptions): void {
+    if (options.type) schema.type = options.type;
+    if (options.format) schema.format = options.format;
+    if (options.description) schema.description = options.description;
+    if (options.example !== undefined) schema.example = options.example;
+    if (options.default !== undefined) schema.default = options.default;
+    if (options.enum) schema.enum = options.enum;
+    if (options.minimum !== undefined) schema.minimum = options.minimum;
+    if (options.maximum !== undefined) schema.maximum = options.maximum;
+    if (options.minLength !== undefined) schema.minLength = options.minLength;
+    if (options.maxLength !== undefined) schema.maxLength = options.maxLength;
+    if (options.pattern) schema.pattern = options.pattern;
+    if (options.nullable !== undefined) schema.nullable = options.nullable;
+    if (options.readOnly !== undefined) schema.readOnly = options.readOnly;
+    if (options.writeOnly !== undefined) schema.writeOnly = options.writeOnly;
+    if (options.deprecated !== undefined) schema.deprecated = options.deprecated;
 }
 
 function scalarSchema(designType: unknown): SchemaObject {
@@ -255,14 +281,30 @@ function renderSwaggerHtml(specUrl: string, title: string): string {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${safeTitle}</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" integrity="sha384-Q8k0JRmG3CMQ4wjY01pHEoXbkRJaDEO6z7M7nNYb0hHBnFGhIouEAKBa7wFJM" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css" crossorigin="anonymous" />
+  <style>
+    html { box-sizing: border-box; overflow-y: scroll; }
+    *, *:before, *:after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+    #swagger-ui { max-width: 960px; margin: 0 auto; }
+  </style>
 </head>
 <body>
   <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" integrity="sha384-placeholder" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js" crossorigin="anonymous"></script>
   <script>
-    SwaggerUIBundle({ url: ${JSON.stringify(specUrl)}, dom_id: "#swagger-ui" });
+    window.onload = function() {
+      SwaggerUIBundle({
+        url: ${JSON.stringify(specUrl)},
+        dom_id: '#swagger-ui',
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+        layout: "BaseLayout",
+        deepLinking: true,
+        tryItOutEnabled: true,
+      });
+    };
   </script>
 </body>
 </html>`;

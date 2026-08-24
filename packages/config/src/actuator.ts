@@ -1,7 +1,7 @@
 import os from "os";
 import { HttpAdapter } from "@solumjs/http";
 import { getDatabaseDriver } from "@solumjs/orm";
-import { getFrameworkLogger } from "@solumjs/core";
+import { getFrameworkLogger, container } from "@solumjs/core";
 
 export interface ActuatorOptions {
     basePath?: string;
@@ -162,6 +162,77 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
                 timestamp: new Date().toISOString(),
             },
             ...(options.info || {}),
+        }),
+    });
+
+    adapter.registerRoute(basePath, {
+        method: "get",
+        path: "/beans",
+        handler: protectedHandler((_req: any, res: any) => {
+            const beans = container.listBeans();
+            res.status(200).json({
+                context: {
+                    beans: beans.map((b) => ({
+                        name: b.token,
+                        scope: b.scope,
+                    })),
+                    count: beans.length,
+                },
+            });
+        }),
+    });
+
+    adapter.registerRoute(basePath, {
+        method: "get",
+        path: "/mappings",
+        handler: protectedHandler((_req: any, res: any) => {
+            const routes: Array<{ method: string; path: string }> = [];
+            const adapterAny = adapter as any;
+            if (adapterAny.routes && Array.isArray(adapterAny.routes)) {
+                for (const route of adapterAny.routes) {
+                    if (route.method && route.path) {
+                        routes.push({
+                            method: route.method.toUpperCase(),
+                            path: route.fullPath ?? route.path,
+                        });
+                    }
+                }
+            }
+            res.status(200).json({
+                mappings: routes,
+                count: routes.length,
+            });
+        }),
+    });
+
+    adapter.registerRoute(basePath, {
+        method: "get",
+        path: "/env",
+        handler: protectedHandler((_req: any, res: any) => {
+            const sensitiveKeys = /password|secret|token|key|credential|auth/i;
+            const env: Record<string, string> = {};
+            for (const [key, value] of Object.entries(process.env)) {
+                if (value !== undefined) {
+                    env[key] = sensitiveKeys.test(key) ? "******" : value;
+                }
+            }
+            res.status(200).json({
+                activeProfiles: process.env.SOLUM_PROFILE || process.env.NODE_ENV || "development",
+                propertySources: [{ name: "systemProperties", properties: env }],
+            });
+        }),
+    });
+
+    adapter.registerRoute(basePath, {
+        method: "get",
+        path: "/loggers",
+        handler: protectedHandler((_req: any, res: any) => {
+            res.status(200).json({
+                levels: ["error", "warn", "info", "debug", "trace"],
+                loggers: {
+                    root: { effectiveLevel: process.env.LOG_LEVEL || "info" },
+                },
+            });
         }),
     });
 

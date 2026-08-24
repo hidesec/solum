@@ -59,15 +59,15 @@ export function getMailSendDeclarations(target: Function): Array<{ propertyKey: 
     return Reflect.getOwnMetadata(MAIL_SEND_METADATA, target) || [];
 }
 
-function sanitizeHeaderValue(value: string): string {
+export function sanitizeHeaderValue(value: string): string {
     return value.replace(/[\r\n]/g, "");
 }
 
-function sanitizeSmtpAddress(addr: string): string {
+export function sanitizeSmtpAddress(addr: string): string {
     return addr.replace(/[<>\r\n]/g, "").trim();
 }
 
-function buildMimeMessage(options: EmailOptions, from: string): string {
+export function buildMimeMessage(options: EmailOptions, from: string): string {
     const boundary = `----=_Part_${crypto.randomBytes(16).toString("hex")}`;
     const messageId = `<${crypto.randomUUID()}@solumjs>`;
     const date = new Date().toUTCString();
@@ -122,11 +122,11 @@ function buildMimeMessage(options: EmailOptions, from: string): string {
     return body;
 }
 
-function base64Encode(str: string): string {
+export function base64Encode(str: string): string {
     return Buffer.from(str, "utf8").toString("base64");
 }
 
-function parseSmtpResponse(line: string): { code: number; message: string } {
+export function parseSmtpResponse(line: string): { code: number; message: string } {
     const match = line.match(/^(\d{3})\s*(.*)/);
     if (!match) return { code: 0, message: line };
     return { code: parseInt(match[1], 10), message: match[2] };

@@ -7,3 +7,4 @@ export * from "./openapi";
 export * from "./yaml-parser";
 export * from "./profile-config";
 export * from "./actuator";
+export * from "./api-property.decorator";

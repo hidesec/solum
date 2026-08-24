@@ -18,3 +18,4 @@ export * from "./batch";
 export * from "./discovery";
 export * from "./config-server";
 export * from "./event-sourcing";
+export * from "./logger";

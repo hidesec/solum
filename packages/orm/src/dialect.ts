@@ -14,6 +14,7 @@ export interface Dialect {
     qualifyTable(schema: string, table: string): string;
     quote(id: string): string;
     countExpression(): string;
+    countOverExpression(): string;
     likeOperator(op: string): string;
     buildUpsert(options: UpsertOptions): StatementPlan;
     buildInsertReturning(options: InsertReturningOptions): StatementPlan;
@@ -104,6 +105,10 @@ class PostgresDialect implements Dialect {
 
     countExpression(): string {
         return "COUNT(*)::int";
+    }
+
+    countOverExpression(): string {
+        return "COUNT(*) OVER()::int";
     }
 
     likeOperator(op: string): string {
@@ -198,6 +203,10 @@ class MysqlDialect implements Dialect {
 
     countExpression(): string {
         return "COUNT(*)";
+    }
+
+    countOverExpression(): string {
+        return "COUNT(*) OVER()";
     }
 
     likeOperator(_op: string): string {
@@ -306,6 +315,10 @@ class SqliteDialect implements Dialect {
         return "COUNT(*)";
     }
 
+    countOverExpression(): string {
+        return "COUNT(*) OVER()";
+    }
+
     likeOperator(_op: string): string {
         return "LIKE";
     }
@@ -402,6 +415,10 @@ class MssqlDialect implements Dialect {
 
     countExpression(): string {
         return "COUNT(*)";
+    }
+
+    countOverExpression(): string {
+        return "COUNT(*) OVER()";
     }
 
     likeOperator(_op: string): string {
@@ -529,6 +546,10 @@ class OracleDialect implements Dialect {
 
     countExpression(): string {
         return "COUNT(*)";
+    }
+
+    countOverExpression(): string {
+        return "COUNT(*) OVER()";
     }
 
     likeOperator(_op: string): string {

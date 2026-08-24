@@ -1,4 +1,4 @@
-import { InMemoryCacheStore, CacheManager } from "../cache.decorator";
+import { InMemoryCacheStore, CacheManager, resolveCacheKey } from "../cache.decorator";
 
 describe("InMemoryCacheStore", () => {
     let store: InMemoryCacheStore;
@@ -135,5 +135,31 @@ describe("CacheManager", () => {
         expect(manager.storeName).toBe("custom");
         expect(await manager.get("any")).toBe("custom-value");
         expect(customStore.get).toHaveBeenCalledWith("any");
+    });
+});
+
+describe("resolveCacheKey", () => {
+    it("should resolve positional arguments with {0}, {1}", () => {
+        expect(resolveCacheKey("user:{0}", ["abc123"])).toBe("user:abc123");
+        expect(resolveCacheKey("user:{0}:{1}", ["abc", "xyz"])).toBe("user:abc:xyz");
+    });
+
+    it("should resolve named arguments with methodParams", () => {
+        expect(resolveCacheKey("user:{id}", ["abc123"], ["id"])).toBe("user:abc123");
+        expect(resolveCacheKey("user:{id}:post:{postId}", ["u1", "p1"], ["id", "postId"])).toBe("user:u1:post:p1");
+    });
+
+    it("should handle missing arguments", () => {
+        expect(resolveCacheKey("user:{0}", [])).toBe("user:_MISSING_0_");
+        expect(resolveCacheKey("user:{id}", [], ["id"])).toBe("user:_MISSING_id_");
+    });
+
+    it("should handle null/undefined values", () => {
+        expect(resolveCacheKey("user:{0}", [null])).toBe("user:null");
+        expect(resolveCacheKey("user:{0}", [undefined])).toBe("user:null");
+    });
+
+    it("should stringify objects", () => {
+        expect(resolveCacheKey("user:{0}", [{ name: "test" }])).toBe("user:[object Object]");
     });
 });

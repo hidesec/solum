@@ -5,3 +5,4 @@ export * from "./not-found.middleware";
 export * from "./global-exception.advice";
 export * from "./exception-handler.decorator";
 export * from "./csrf.middleware";
+export * from "./redis-rate-limit";

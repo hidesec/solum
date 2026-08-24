@@ -8,6 +8,7 @@ export * from "./path-match";
 export * from "./multipart";
 export * from "./static";
 export * from "./session";
+export * from "./redis-session";
 export {
     HttpClient,
     HttpGet,

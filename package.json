@@ -11,7 +11,8 @@
     "dev": "npm run dev --workspace backend-example",
     "migrate": "npm run migrate --workspace backend-example",
     "typecheck": "for p in packages/*/; do (cd \"$p\" && npx tsc -p tsconfig.json --noEmit) || exit 1; done",
-    "solum": "node packages/cli/bin/solum"
+    "solum": "node packages/cli/bin/solum",
+    "size": "node scripts/size-report.js"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

@@ -82,6 +82,26 @@ function parseField(field: string, min: number, max: number): Set<number> {
     return values;
 }
 
+export function parseFieldForTest(field: string, min: number, max: number): Set<number> {
+    return parseField(field, min, max);
+}
+
+export function parseCronForTest(expression: string): CronFields {
+    return parseCron(expression);
+}
+
+export function parseIntervalMsForTest(expression: string): number {
+    return parseIntervalMs(expression);
+}
+
+export function nextCronDateForTest(fields: CronFields, from: Date): Date {
+    return nextCronDate(fields, from);
+}
+
+export function isCronForTest(expression: string): boolean {
+    return isCron(expression);
+}
+
 function parseCron(expression: string): CronFields {
     const parts = expression.trim().split(/\s+/);
     if (parts.length !== 5) {

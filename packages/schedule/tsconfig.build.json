@@ -7,10 +7,14 @@
     "outDir": "dist",
     "rootDir": "./src",
     "types": [
-      "node"
+      "node",
+      "jest"
     ]
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/__test__"
   ]
 }

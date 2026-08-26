@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/validation",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "SolumJS validation: decorator-based DTO validation",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.1"
+    "@solumjs/core": "^0.2.2"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
@@ -25,7 +25,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hidesec/backend-example.git",
+    "url": "https://github.com/hidesec/solum.git",
     "directory": "packages/validation"
   },
   "engines": {

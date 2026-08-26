@@ -1,6 +1,6 @@
 {
   "name": "solumjs",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "SolumJS: A modular, decorator-driven backend framework for Node.js and TypeScript (installs all packages)",
   "license": "MIT",
   "bin": {
@@ -13,22 +13,22 @@
     "postinstall": "echo '\n  SolumJS installed! Run \"solum new my-app\" to create a project.\n'"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.1",
-    "@solumjs/http": "^0.2.1",
-    "@solumjs/aop": "^0.2.1",
-    "@solumjs/orm": "^0.2.1",
-    "@solumjs/database": "^0.2.1",
-    "@solumjs/cache": "^0.2.1",
-    "@solumjs/auth": "^0.2.1",
-    "@solumjs/events": "^0.2.1",
-    "@solumjs/schedule": "^0.2.1",
-    "@solumjs/config": "^0.2.1",
-    "@solumjs/validation": "^0.2.1",
-    "@solumjs/middlewares": "^0.2.1",
-    "@solumjs/testing": "^0.2.1",
-    "@solumjs/websocket": "^0.2.1",
-    "@solumjs/email": "^0.2.1",
-    "@solumjs/cli": "^0.1.4"
+    "@solumjs/core": "^0.2.2",
+    "@solumjs/http": "^0.2.2",
+    "@solumjs/aop": "^0.2.2",
+    "@solumjs/orm": "^0.2.2",
+    "@solumjs/database": "^0.2.2",
+    "@solumjs/cache": "^0.2.2",
+    "@solumjs/auth": "^0.2.2",
+    "@solumjs/events": "^0.2.2",
+    "@solumjs/schedule": "^0.2.2",
+    "@solumjs/config": "^0.2.2",
+    "@solumjs/validation": "^0.2.2",
+    "@solumjs/middlewares": "^0.2.2",
+    "@solumjs/testing": "^0.2.2",
+    "@solumjs/websocket": "^0.2.2",
+    "@solumjs/email": "^0.2.2",
+    "@solumjs/cli": "^0.1.5"
   },
   "keywords": [
     "solumjs",
@@ -45,10 +45,10 @@
     "jwt",
     "websocket"
   ],
-  "homepage": "https://github.com/hidesec/backend-example#readme",
+  "homepage": "https://github.com/hidesec/solum#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hidesec/backend-example.git",
+    "url": "git+https://github.com/hidesec/solum.git",
     "directory": "packages/solumjs"
   },
   "engines": {

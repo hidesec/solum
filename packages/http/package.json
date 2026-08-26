@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/http",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "SolumJS HTTP abstraction, router and Node.js adapter",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.1"
+    "@solumjs/core": "^0.2.2"
   },
   "peerDependencies": {
     "redis": "^6.2.1"
@@ -33,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hidesec/backend-example.git",
+    "url": "https://github.com/hidesec/solum.git",
     "directory": "packages/http"
   },
   "engines": {

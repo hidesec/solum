@@ -83,9 +83,9 @@ npm install @solumjs/core @solumjs/http @solumjs/config
 
 ## Docs
 
-- [Main README](../../README.md)
-- [Migration Guide](../../docs/migration-guide.md)
-- Each package has its own README in `packages/<name>/README.md`
+- [Main README](https://github.com/hidesec/solum#readme)
+- [Migration Guide](https://github.com/hidesec/solum/blob/main/docs/migration-guide.md)
+- Each package has its own README on npm: `https://www.npmjs.com/package/@solumjs/<name>`
 
 ## License
 

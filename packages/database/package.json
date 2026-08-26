@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/database",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "SolumJS database: multi-driver connections, repositories, migrations",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,9 +14,9 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.1",
-    "@solumjs/orm": "^0.2.1",
-    "@solumjs/http": "^0.2.1"
+    "@solumjs/core": "^0.2.2",
+    "@solumjs/orm": "^0.2.2",
+    "@solumjs/http": "^0.2.2"
   },
   "peerDependencies": {
     "pg": "^8.23.0",
@@ -53,7 +53,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hidesec/backend-example.git",
+    "url": "https://github.com/hidesec/solum.git",
     "directory": "packages/database"
   },
   "engines": {

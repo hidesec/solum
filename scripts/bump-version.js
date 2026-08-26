@@ -32,11 +32,6 @@ function bumpVersion(version, type) {
     }
 }
 
-function bumpMinor(version) {
-    const [major, minor, patch] = version.split(".").map(Number);
-    return `${major}.${minor + 1}.0`;
-}
-
 console.log(`\n📦 Bumping versions (${bumpType})${dryRun ? " [DRY RUN]" : ""}\n`);
 
 for (const pkg of allPackages) {

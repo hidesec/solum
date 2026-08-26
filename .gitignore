@@ -92,6 +92,19 @@ typings/
 
 # dotenv environment variables file
 .env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Turbo
+.turbo/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

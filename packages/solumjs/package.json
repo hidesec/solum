@@ -1,6 +1,6 @@
 {
   "name": "solumjs",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "SolumJS: A modular, decorator-driven backend framework for Node.js and TypeScript (installs all packages)",
   "license": "MIT",
   "bin": {

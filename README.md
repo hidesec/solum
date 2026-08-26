@@ -1,9 +1,9 @@
 # SolumJS
 
-[![npm version](https://img.shields.io/npm/v/@solumjs/core.svg)](https://www.npmjs.com/package/@solumjs/core)
-[![npm downloads](https://img.shields.io/npm/dm/@solumjs/core.svg)](https://www.npmjs.com/package/@solumjs/core)
-[![license](https://img.shields.io/npm/l/@solumjs/core.svg)](https://github.com/hidesec/backend-example/blob/main/LICENSE)
-[![node](https://img.shields.io/node/v/@solumjs/core.svg)](https://nodejs.org)
+[![npm version](https://img.shields.io/npm/v/solumjs.svg)](https://www.npmjs.com/package/solumjs)
+[![npm downloads](https://img.shields.io/npm/dm/solumjs.svg)](https://www.npmjs.com/package/solumjs)
+[![license](https://img.shields.io/npm/l/solumjs.svg)](https://github.com/hidesec/backend-example/blob/main/LICENSE)
+[![node](https://img.shields.io/node/v/solumjs.svg)](https://nodejs.org)
 
 **A modular, decorator-driven backend framework for Node.js and TypeScript**
 

@@ -55,7 +55,11 @@ export function createRedisRateLimit(options: RedisRateLimitOptions): SolumjsMid
 
             next();
         } catch (err) {
-            next();
+            res.status(503).json({
+                status: "error",
+                message: "Service temporarily unavailable",
+            });
+            return;
         }
     };
 }

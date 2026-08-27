@@ -127,8 +127,12 @@ export class UserController {
     async updateRole(
         @Param("id") id: string,
         @Valid() @Body() dto: UpdateRoleDto,
+        @CurrentUser() principal: JwtPayload,
         @Req() req: SolumjsRequest
     ): Promise<UserResponseDto> {
+        if (principal.sub === id) {
+            throw new ForbiddenException("Cannot change your own role");
+        }
         req.log.info({ param: id, role: dto.role }, "Updating user role");
         return UserResponseDto.fromEntity(await this.userService.updateRole(id, dto.role as UserRole));
     }

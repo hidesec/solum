@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/core",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "SolumJS core: DI container, config/logger ports, HTTP exceptions",
   "license": "MIT",
   "main": "dist/index.js",

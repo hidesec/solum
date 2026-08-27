@@ -59,7 +59,7 @@ describe("UserService", () => {
     });
 
     it("should create a new user", async () => {
-        const dto = { name: "John Doe", email: "john.doe@example.com" };
+        const dto = { name: "John Doe", email: "john.doe@example.com", password: "Str0ng!Pass" };
         const user = { id: "1", name: "John Doe", email: "john.doe@example.com", role: "USER", createdAt: new Date() };
         mockRepo.save.mockResolvedValueOnce(user);
 

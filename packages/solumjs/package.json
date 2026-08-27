@@ -1,6 +1,6 @@
 {
   "name": "solumjs",
-  "version": "0.3.4",
+  "version": "0.3.6",
   "description": "SolumJS: A modular, decorator-driven backend framework for Node.js and TypeScript (installs all packages)",
   "license": "MIT",
   "bin": {
@@ -13,22 +13,22 @@
     "postinstall": "echo '\n  SolumJS installed! Run \"solum new my-app\" to create a project.\n'"
   },
   "dependencies": {
-    "@solumjs/core": "^0.3.2",
-    "@solumjs/http": "^0.3.2",
-    "@solumjs/aop": "^0.3.2",
-    "@solumjs/orm": "^0.3.2",
-    "@solumjs/database": "^0.3.2",
-    "@solumjs/cache": "^0.3.2",
-    "@solumjs/auth": "^0.3.2",
-    "@solumjs/events": "^0.3.2",
-    "@solumjs/schedule": "^0.3.2",
-    "@solumjs/config": "^0.3.2",
-    "@solumjs/validation": "^0.3.2",
-    "@solumjs/middlewares": "^0.3.2",
-    "@solumjs/testing": "^0.3.2",
-    "@solumjs/websocket": "^0.3.2",
-    "@solumjs/email": "^0.3.2",
-    "@solumjs/cli": "^0.3.3"
+    "@solumjs/core": "^0.3.3",
+    "@solumjs/http": "^0.3.3",
+    "@solumjs/aop": "^0.3.3",
+    "@solumjs/orm": "^0.3.3",
+    "@solumjs/database": "^0.3.3",
+    "@solumjs/cache": "^0.3.3",
+    "@solumjs/auth": "^0.3.3",
+    "@solumjs/events": "^0.3.3",
+    "@solumjs/schedule": "^0.3.3",
+    "@solumjs/config": "^0.3.3",
+    "@solumjs/validation": "^0.3.3",
+    "@solumjs/middlewares": "^0.3.3",
+    "@solumjs/testing": "^0.3.3",
+    "@solumjs/websocket": "^0.3.3",
+    "@solumjs/email": "^0.3.3",
+    "@solumjs/cli": "^0.3.5"
   },
   "keywords": [
     "solumjs",

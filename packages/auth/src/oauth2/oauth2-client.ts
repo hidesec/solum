@@ -223,7 +223,14 @@ function httpPost(url: string, body: string, headers: Record<string, string>): P
         (res) => {
             const chunks: Buffer[] = [];
             res.on("data", (chunk) => chunks.push(chunk));
-            res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+            res.on("end", () => {
+                const text = Buffer.concat(chunks).toString("utf8");
+                if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+                    reject(new Error(`OAuth2 request failed with status ${res.statusCode}`));
+                    return;
+                }
+                resolve(text);
+            });
         }
     );
 
@@ -250,7 +257,14 @@ function httpGet(url: string, headers: Record<string, string>): Promise<string> 
         (res) => {
             const chunks: Buffer[] = [];
             res.on("data", (chunk) => chunks.push(chunk));
-            res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+            res.on("end", () => {
+                const text = Buffer.concat(chunks).toString("utf8");
+                if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+                    reject(new Error(`OAuth2 request failed with status ${res.statusCode}`));
+                    return;
+                }
+                resolve(text);
+            });
         }
     );
 

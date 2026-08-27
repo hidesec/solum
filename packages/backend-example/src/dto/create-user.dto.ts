@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MinLength, Pattern } from "@solumjs/validation";
+import { IsEmail, IsString, MinLength, Pattern } from "@solumjs/validation";
 
 export class CreateUserDto {
     @IsString()
@@ -8,9 +8,8 @@ export class CreateUserDto {
     @IsEmail()
     email!: string;
 
-    @IsOptional()
     @IsString()
     @MinLength(8)
     @Pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/)
-    password?: string;
+    password!: string;
 }

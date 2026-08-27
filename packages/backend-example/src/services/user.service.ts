@@ -34,15 +34,14 @@ export class UserService implements IUserService {
     @LogExecution()
     async createUser(dto: CreateUserDto): Promise<User> {
         const id = randomUUID();
-        const existing = await this.userRepository.findByEmail(dto.email);
+        const normalizedEmail = dto.email.toLowerCase().trim();
+        const existing = await this.userRepository.findByEmail(normalizedEmail);
         if(existing) {
-            throw new ConflictException(`Email ${dto.email} is already registered`);
+            throw new ConflictException(`Email ${normalizedEmail} is already registered`);
         }
 
-        const user = new User(id, dto.name, dto.email);
-        if (dto.password) {
-            user.passwordHash = hashPassword(dto.password);
-        }
+        const user = new User(id, dto.name, normalizedEmail);
+        user.passwordHash = hashPassword(dto.password);
 
         const saved = await this.userRepository.save(user);
         await this.eventBus.publish("USER_CREATED", { userId: saved.id, email: saved.email });

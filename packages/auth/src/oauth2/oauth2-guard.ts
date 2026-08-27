@@ -62,7 +62,7 @@ export function createOAuth2Routes(options: OAuth2GuardOptions): OAuth2RouteHand
                         res.status(500).json(result.json);
                     }
                 } else {
-                    res.status(500).json({ error: (error as Error).message });
+                    res.status(500).json({ error: "OAuth2 authentication failed" });
                 }
             }
         },

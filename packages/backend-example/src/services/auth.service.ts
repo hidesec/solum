@@ -23,10 +23,15 @@ export class AuthService implements IAuthService {
     ) {}
 
     async login(dto: LoginRequestDto): Promise<LoginResponse> {
-        const user = await this.userRepository.findByEmail(dto.email);
+        const normalizedEmail = dto.email.toLowerCase().trim();
+        const user = await this.userRepository.findByEmail(normalizedEmail);
 
-        if (!user?.passwordHash || !verifyPassword(dto.password, user.passwordHash)) {
-            logger.warn({ email: dto.email }, "Failed login attempt");
+        const dummyHash = "$2b$10$000000000000000000000000000000000000000000000000000000";
+        const hash = user?.passwordHash ?? dummyHash;
+        const valid = verifyPassword(dto.password, hash);
+
+        if (!user?.passwordHash || !valid) {
+            logger.warn({ email: normalizedEmail }, "Failed login attempt");
             throw new UnauthorizedException("Invalid email or password");
         }
 

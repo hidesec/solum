@@ -221,8 +221,8 @@ export function mountWebSocket(server: http.Server, handlers: Map<string, WsHand
         }
 
         if (options.authToken) {
-            const url = new URL(req.url || "/", `http://${req.headers.host}`);
-            const token = url.searchParams.get("token") ?? req.headers.authorization?.replace("Bearer ", "");
+            const authHeader = req.headers.authorization;
+            const token = authHeader?.replace("Bearer ", "");
             if (!token || !timingSafeEqual(token, options.authToken)) {
                 socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
                 socket.destroy();

@@ -158,7 +158,7 @@ export function Retryable(options: { maxAttempts: number; backoffMs?: number; ba
     };
 }
 
-interface RequestOptions {
+export interface RequestOptions {
     method: string;
     url: string;
     body?: unknown;
@@ -220,7 +220,7 @@ function resolveAndCheck(hostname: string): Promise<string> {
     return promise;
 }
 
-function makeRequest(options: RequestOptions, redirectCount = 0): Promise<unknown> {
+export function makeRequest(options: RequestOptions, redirectCount = 0): Promise<unknown> {
     const { promise, resolve, reject } = Promise.withResolvers<unknown>();
     const url = new URL(options.url);
 

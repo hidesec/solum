@@ -111,16 +111,17 @@ export class CreateUserDto {
 ```typescript
 import { mountActuator } from "@solumjs/config";
 
-// Serves:
+// Serves (sensitive endpoints require authGuard or localhost access):
 // GET /actuator/health — health checks
 // GET /actuator/info — application info
-// GET /actuator/beans — registered beans
-// GET /actuator/mappings — route mappings
-// GET /actuator/env — sanitized environment
+// GET /actuator/beans — registered beans (localhost only without authGuard)
+// GET /actuator/mappings — route mappings (localhost only without authGuard)
+// GET /actuator/env — sanitized environment (localhost only without authGuard)
 // GET /actuator/loggers — log levels
 // GET /actuator/metrics — metrics
 mountActuator(adapter, {
     basePath: "/actuator",
+    authGuard: (req, res) => { /* verify auth */ return true; },
     healthchecks: [
         { name: "database", check: async () => ({ status: "UP" }) },
     ],

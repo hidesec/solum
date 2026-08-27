@@ -306,12 +306,14 @@ async function introspectMysql(driver: DatabaseDriver): Promise<IntrospectedSche
 
 async function introspectSqlite(driver: DatabaseDriver): Promise<IntrospectedSchema> {
     const tables = new Map<string, ActualTable>();
+    const SAFE_TABLE = /^[a-zA-Z0-9_]+$/;
     const masterResult = await driver.query(
         `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`
     );
 
     for (const row of masterResult.rows) {
         const tableName = row.name;
+        if (!SAFE_TABLE.test(tableName)) continue;
         const table: ActualTable = { schema: "main", name: tableName, columns: new Map(), foreignKeys: new Map(), indexes: new Set() };
 
         const infoResult = await driver.query(`PRAGMA table_info("${tableName}")`);

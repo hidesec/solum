@@ -76,13 +76,14 @@ app.use(createRedisRateLimit({
 ```typescript
 import { csrfProtection } from "@solumjs/middlewares";
 
-app.use(csrfProtection());
+// secret is required (min 32 chars) — uses timing-safe comparison
+app.use(csrfProtection({ secret: process.env.CSRF_SECRET }));
 
 // With custom options
 app.use(csrfProtection({
+    secret: process.env.CSRF_SECRET,
     cookieName: "csrf-token",
     headerName: "x-csrf-token",
-    secret: "my-secret",
     ttlSeconds: 3600,
     sameSite: "lax",
     secure: true,

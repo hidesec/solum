@@ -78,12 +78,21 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
     const authGuard = options.authGuard;
 
     if (!authGuard) {
-        getFrameworkLogger().warn("Actuator endpoints have no authGuard configured. All actuator endpoints are publicly accessible. Set options.authGuard to protect them.");
+        getFrameworkLogger().warn("Actuator endpoints have no authGuard configured. Sensitive endpoints (env, beans, mappings) are restricted to localhost only. Set options.authGuard to protect all endpoints.");
     }
+
+    const isLocalhost = (req: any): boolean => {
+        const addr = req.socket?.remoteAddress ?? "";
+        return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1" || addr === "";
+    };
 
     const protectedHandler = (handler: (req: any, res: any) => void | Promise<void>) => (req: any, res: any) => {
         if (authGuard && !authGuard(req, res)) {
             res.status(401).json({ status: "error", message: "Unauthorized" });
+            return;
+        }
+        if (!authGuard && !isLocalhost(req)) {
+            res.status(403).json({ status: "error", message: "Forbidden: actuator endpoints require authGuard or localhost access" });
             return;
         }
         return handler(req, res);
@@ -203,11 +212,11 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
         method: "get",
         path: "/env",
         handler: protectedHandler((_req: any, res: any) => {
-            const sensitiveKeys = /password|secret|token|key|credential|auth/i;
+            const ALLOWED_KEYS = /^(NODE_ENV|SOLUM_PROFILE|SOLUM_APP_NAME|SOLUM_APP_VERSION|PORT|HOST|LOG_LEVEL|TZ)$/i;
             const env: Record<string, string> = {};
             for (const [key, value] of Object.entries(process.env)) {
-                if (value !== undefined) {
-                    env[key] = sensitiveKeys.test(key) ? "******" : value;
+                if (value !== undefined && ALLOWED_KEYS.test(key)) {
+                    env[key] = value;
                 }
             }
             res.status(200).json({

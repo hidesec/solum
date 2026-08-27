@@ -1,8 +1,13 @@
 import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { runGenerate } from "./generate";
 import { scaffoldProject } from "./scaffold";
+
+function sanitizeArgs(args: string[]): string[] {
+    const SAFE_ARG = /^[a-zA-Z0-9._-]+$/;
+    return args.filter((arg) => SAFE_ARG.test(arg));
+}
 
 function getVersion(): string {
     try {
@@ -30,7 +35,8 @@ function runTest(extraArgs: string[]): void {
             console.error('Add a test script, e.g.: "test": "jest"');
             process.exit(1);
         }
-        execSync(`npm test ${extraArgs.join(" ")}`, { stdio: "inherit", cwd: process.cwd() });
+        const safeArgs = sanitizeArgs(extraArgs);
+        execFileSync("npm", ["test", ...safeArgs], { stdio: "inherit", cwd: process.cwd() });
     } catch {
         process.exit(1);
     }
@@ -47,15 +53,15 @@ function runDbMigrate(extraArgs: string[]): void {
     try {
         require("dotenv/config");
     } catch {
-        // dotenv is optional
     }
 
     console.log("Running database migrations...");
 
+    const safeArgs = sanitizeArgs(extraArgs);
     const migrateScript = path.join(process.cwd(), "node_modules", "@solumjs", "cli", "dist", "migrate.js");
     if (fs.existsSync(migrateScript)) {
         try {
-            execSync(`node "${migrateScript}" ${extraArgs.join(" ")}`, { stdio: "inherit", cwd: process.cwd() });
+            execFileSync("node", [migrateScript, ...safeArgs], { stdio: "inherit", cwd: process.cwd() });
             return;
         } catch {
             process.exit(1);
@@ -63,8 +69,9 @@ function runDbMigrate(extraArgs: string[]): void {
     }
 
     try {
-        execSync(
-            `node -e "const {createApplication}=require('@solumjs/config');const {runMigrations}=require('@solumjs/database');const app=createApplication();runMigrations().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)})" ${extraArgs.join(" ")}`,
+        execFileSync(
+            "node",
+            ["-e", "const {createApplication}=require('@solumjs/config');const {runMigrations}=require('@solumjs/database');const app=createApplication();runMigrations().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)})"],
             { stdio: "inherit", cwd: process.cwd() }
         );
     } catch {

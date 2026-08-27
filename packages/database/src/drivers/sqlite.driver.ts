@@ -39,7 +39,16 @@ export class SqliteDriver implements DatabaseDriver {
         const bound = params.map(normalizeParam);
 
         if (isMultiStatement(translated)) {
-            db.exec(translated);
+            const statements = translated.split(/;\s*\n/).filter((s) => s.trim());
+            for (const stmt of statements) {
+                const trimmed = stmt.trim();
+                if (!trimmed) continue;
+                if (/^\s*(SELECT|PRAGMA)/i.test(trimmed)) {
+                    db.prepare(trimmed).all(...(bound as any[]));
+                } else {
+                    db.exec(trimmed);
+                }
+            }
             return { rows: [], rowCount: 0 };
         }
 

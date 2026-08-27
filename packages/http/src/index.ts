@@ -23,6 +23,8 @@ export {
     getRequestInterceptors,
     HttpClientOptions,
     HttpMethodDefinition,
+    RequestOptions,
+    makeRequest,
 } from "./http-client";
 export {
     RestController,

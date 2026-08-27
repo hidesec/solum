@@ -99,13 +99,25 @@ function startHeartbeatCheck(intervalMs: number, ttlMs: number): void {
 
 export function startRegistry(options: ServiceRegistryOptions = {}): http.Server {
     const port = options.port || 8761;
-    const host = options.host || "0.0.0.0";
+    const host = options.host || "127.0.0.1";
     const heartbeatInterval = options.heartbeatIntervalMs || 30000;
     const instanceTtl = options.instanceTtlMs || 90000;
     const authToken = options.authToken;
 
+    if (!authToken) {
+        getFrameworkLogger().warn("[Discovery] No authToken configured. Registry is only accessible from localhost.");
+    }
+
     registryServer = http.createServer((req, res) => {
-        if (authToken) {
+        const remoteAddr = req.socket.remoteAddress ?? "";
+        const isLocalhost = remoteAddr === "127.0.0.1" || remoteAddr === "::1" || remoteAddr === "::ffff:127.0.0.1";
+
+        if (!isLocalhost) {
+            if (!authToken) {
+                res.writeHead(403, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ error: "Forbidden: non-localhost access requires authToken" }));
+                return;
+            }
             const authHeader = req.headers.authorization;
             if (!authHeader || authHeader !== `Bearer ${authToken}`) {
                 res.writeHead(401, { "Content-Type": "application/json" });

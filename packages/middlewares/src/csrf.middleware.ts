@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 import { SolumjsMiddleware, SolumjsRequest, SolumjsResponse, SolumjsNext } from "@solumjs/http";
 
 export interface CsrfOptions {
@@ -19,13 +19,17 @@ function sign(payload: string, secret: string): string {
 
 function verify(payload: string, signature: string, secret: string): boolean {
     const expected = sign(payload, secret);
-    return expected === signature;
+    if (expected.length !== signature.length) return false;
+    return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"));
 }
 
-export function csrfProtection(options: CsrfOptions = {}): SolumjsMiddleware {
+export function csrfProtection(options: CsrfOptions): SolumjsMiddleware {
+    if (!options.secret || options.secret.length < 32) {
+        throw new Error("CSRF secret is required and must be at least 32 characters. Provide options.secret.");
+    }
     const cookieName = options.cookieName ?? "_csrf";
     const headerName = options.headerName ?? "x-csrf-token";
-    const secret = options.secret ?? "solumjs-csrf-default-secret-change-me";
+    const secret = options.secret;
     const ttl = options.ttlSeconds ?? 3600;
     const sameSite = options.sameSite ?? "lax";
     const secure = options.secure ?? false;

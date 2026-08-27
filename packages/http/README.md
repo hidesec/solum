@@ -149,6 +149,19 @@ export interface TodoClient {
 }
 ```
 
+## SSRF-Protected makeRequest
+
+```typescript
+import { makeRequest } from "@solumjs/http";
+
+// Direct SSRF-protected HTTP request (DNS pinning, private IP blocking, redirect limits)
+const res = await makeRequest("https://api.example.com/data", {
+    method: "GET",
+    timeout: 10000,
+    headers: { Authorization: "Bearer token" },
+});
+```
+
 ## Session Management
 
 ```typescript

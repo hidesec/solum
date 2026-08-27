@@ -18,8 +18,7 @@ function checkLoginRateLimit(email: string): void {
     }
 
     if (bucket.lockedUntil && bucket.lockedUntil > now) {
-        const remainingSec = Math.ceil((bucket.lockedUntil - now) / 1000);
-        throw new UnauthorizedException(`Account locked. Try again in ${remainingSec} seconds.`);
+        throw new UnauthorizedException("Account locked. Try again later.");
     }
 
     bucket.count++;

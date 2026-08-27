@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/cli",
-  "version": "0.3.0",
+  "version": "0.3.4",
   "description": "SolumJS CLI: scaffold controllers, services, entities, and more",
   "license": "MIT",
   "main": "dist/index.js",

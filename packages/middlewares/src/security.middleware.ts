@@ -37,6 +37,9 @@ function cors(options: CorsOptions): SolumjsMiddleware {
         const allowedOrigin = options.origin;
 
         if (allowedOrigin === "*") {
+            if (options.credentials) {
+                getFrameworkLogger().warn("[Security] CORS_ORIGIN=* with credentials is insecure. Use a specific origin.");
+            }
             res.raw.setHeader("access-control-allow-origin", "*");
         } else if (requestOrigin && requestOrigin === allowedOrigin) {
             res.raw.setHeader("access-control-allow-origin", requestOrigin);

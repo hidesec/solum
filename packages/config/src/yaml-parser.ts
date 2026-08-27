@@ -81,10 +81,13 @@ export function loadYamlFile(filePath: string): YamlDocument | null {
     return parseYaml(content);
 }
 
+const DANGEROUS_YAML_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
 export function mergeYaml(base: YamlDocument, override: YamlDocument): YamlDocument {
     const result: YamlDocument = { ...base };
 
     for (const [key, value] of Object.entries(override)) {
+        if (DANGEROUS_YAML_KEYS.has(key)) continue;
         if (value !== null && typeof value === "object" && !Array.isArray(value) && typeof result[key] === "object" && result[key] !== null) {
             result[key] = mergeYaml(result[key] as YamlDocument, value as YamlDocument);
         } else {

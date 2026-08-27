@@ -749,16 +749,17 @@ export class CreateUserDto {
 ```typescript
 import { mountActuator } from "@solumjs/config";
 
-// Serves:
+// Serves (sensitive endpoints require authGuard or localhost access):
 // GET /actuator/health — health checks (DB, memory)
 // GET /actuator/info — application info
-// GET /actuator/beans — registered beans
-// GET /actuator/mappings — route mappings
-// GET /actuator/env — sanitized environment
+// GET /actuator/beans — registered beans (localhost only without authGuard)
+// GET /actuator/mappings — route mappings (localhost only without authGuard)
+// GET /actuator/env — sanitized environment (localhost only without authGuard)
 // GET /actuator/loggers — log levels
 // GET /actuator/metrics — JVM-style metrics
 mountActuator(adapter, {
     basePath: "/actuator",
+    authGuard: (req, res) => { /* verify auth */ return true; },
     healthchecks: [
         { name: "database", check: async () => ({ status: "UP" }) },
     ],
@@ -1508,10 +1509,12 @@ app.use(createSecurityMiddlewares({
 ```typescript
 import { csrfProtection } from "@solumjs/middlewares";
 
-app.use(csrfProtection());
+// secret is required (min 32 chars) — no insecure default
+app.use(csrfProtection({ secret: "your-secure-csrf-secret-at-least-32-chars" }));
 
 // With custom options
 app.use(csrfProtection({
+    secret: process.env.CSRF_SECRET,
     cookieName: "csrf-token",
     headerName: "x-csrf-token",
 }));

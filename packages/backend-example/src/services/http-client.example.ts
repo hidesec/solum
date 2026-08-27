@@ -1,5 +1,5 @@
 import { Bean } from "@solumjs/core";
-import { HttpClient, HttpGet } from "@solumjs/http";
+import { HttpClient, HttpGet, makeRequest, RequestOptions } from "@solumjs/http";
 import { logger } from "@config/logger";
 
 interface JsonPlaceholderPost {
@@ -12,20 +12,29 @@ interface JsonPlaceholderPost {
 @HttpClient({ baseUrl: "https://jsonplaceholder.typicode.com" })
 export class HttpPlaceholderClient {
     @HttpGet("/posts/:id")
-    getPost(params: { id: number }): Promise<JsonPlaceholderPost> {
-        return fetch(`https://jsonplaceholder.typicode.com/posts/${params.id}`)
-            .then((r) => r.json()) as any;
+    async getPost(params: { id: number }): Promise<JsonPlaceholderPost> {
+        const res = await makeRequest({
+            method: "GET",
+            url: `https://jsonplaceholder.typicode.com/posts/${params.id}`,
+            timeout: 10000,
+        });
+        return res as JsonPlaceholderPost;
     }
 
     @HttpGet("/posts")
-    getPosts(): Promise<JsonPlaceholderPost[]> {
-        return fetch("https://jsonplaceholder.typicode.com/posts")
-            .then((r) => r.json()) as any;
+    async getPosts(): Promise<JsonPlaceholderPost[]> {
+        const res = await makeRequest({
+            method: "GET",
+            url: "https://jsonplaceholder.typicode.com/posts",
+            timeout: 10000,
+        });
+        return res as JsonPlaceholderPost[];
     }
 }
 
 /**
  * Example service demonstrating the declarative HTTP client pattern.
+ * Uses makeRequest() for SSRF-protected HTTP calls instead of raw fetch().
  * HttpPlaceholderClient is a proxy that intercepts method calls and
  * makes HTTP requests based on the @HttpClient and @HttpGet decorators.
  */

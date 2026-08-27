@@ -59,9 +59,22 @@ export class FileSystemConfigRepository implements ConfigRepository {
     }
 
     async getPropertiesByUri(uri: string): Promise<Record<string, unknown>> {
+        const safeUri = sanitizeName(uri.replace(/\//g, ""));
+        if (!safeUri || safeUri !== uri.replace(/\//g, "")) {
+            throw new Error("Access denied: invalid URI characters");
+        }
         const resolved = path.resolve(this.configDir, uri);
-        if (!resolved.startsWith(this.configDir)) {
-            throw new Error("Access denied: path outside config directory");
+        try {
+            const realConfigDir = fs.realpathSync(this.configDir);
+            const realResolved = fs.realpathSync(resolved);
+            if (!realResolved.startsWith(realConfigDir + path.sep) && realResolved !== realConfigDir) {
+                throw new Error("Access denied: path outside config directory");
+            }
+        } catch (err) {
+            if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+                return {};
+            }
+            throw err;
         }
         if (fs.existsSync(resolved)) {
             const content = fs.readFileSync(resolved, "utf8");
@@ -100,11 +113,23 @@ export class ConfigServer {
     start(): Promise<void> {
         return new Promise((resolve) => {
             const port = this.options.port || 8888;
-            const host = this.options.host || "0.0.0.0";
+            const host = this.options.host || "127.0.0.1";
             const authToken = this.options.authToken;
 
+            if (!authToken) {
+                getFrameworkLogger().warn("[ConfigServer] No authToken configured. Server is only accessible from localhost.");
+            }
+
             this.server = http.createServer((req, res) => {
-                if (authToken) {
+                const remoteAddr = req.socket.remoteAddress ?? "";
+                const isLocalhost = remoteAddr === "127.0.0.1" || remoteAddr === "::1" || remoteAddr === "::ffff:127.0.0.1";
+
+                if (!isLocalhost) {
+                    if (!authToken) {
+                        res.writeHead(403, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ error: "Forbidden: non-localhost access requires authToken" }));
+                        return;
+                    }
                     const authHeader = req.headers.authorization;
                     if (!authHeader || authHeader !== `Bearer ${authToken}`) {
                         res.writeHead(401, { "Content-Type": "application/json" });

@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/http",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "SolumJS HTTP abstraction, router and Node.js adapter",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.3.4"
+    "@solumjs/core": "^0.3.5"
   },
   "peerDependencies": {
     "redis": "^6.2.1"

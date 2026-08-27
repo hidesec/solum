@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/email",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "SolumJS Email support with SMTP and template engine",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.3.4"
+    "@solumjs/core": "^0.3.5"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

@@ -137,31 +137,32 @@ interface ReadBodyResult {
 }
 
 function collectRawBody(req: IncomingMessage, limitBytes: number): Promise<Buffer | undefined> {
-    return new Promise((resolveBody, rejectBody) => {
-        const chunks: Buffer[] = [];
-        let size = 0;
-        let failed = false;
+    const { promise, resolve, reject } = Promise.withResolvers<Buffer | undefined>();
+    const chunks: Buffer[] = [];
+    let size = 0;
+    let failed = false;
 
-        req.on("data", (chunk: Buffer) => {
-            size += chunk.length;
-            if (size > limitBytes) {
-                if (!failed) {
-                    failed = true;
-                    chunks.length = 0;
-                    rejectBody(new PayloadTooLargeException(`Request body exceeds limit of ${limitBytes} bytes`));
-                }
-                return;
+    req.on("data", (chunk: Buffer) => {
+        size += chunk.length;
+        if (size > limitBytes) {
+            if (!failed) {
+                failed = true;
+                chunks.length = 0;
+                reject(new PayloadTooLargeException(`Request body exceeds limit of ${limitBytes} bytes`));
             }
-            if (!failed) chunks.push(chunk);
-        });
-
-        req.on("end", () => {
-            if (failed) return;
-            resolveBody(chunks.length === 0 ? undefined : Buffer.concat(chunks));
-        });
-
-        req.on("error", rejectBody);
+            return;
+        }
+        if (!failed) chunks.push(chunk);
     });
+
+    req.on("end", () => {
+        if (failed) return;
+        resolve(chunks.length === 0 ? undefined : Buffer.concat(chunks));
+    });
+
+    req.on("error", reject);
+
+    return promise;
 }
 
 async function readBody(incoming: IncomingMessage, limitBytes: number): Promise<ReadBodyResult> {

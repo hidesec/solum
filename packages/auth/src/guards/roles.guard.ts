@@ -14,7 +14,10 @@ export class RolesGuard implements CanActivate {
             throw new UnauthorizedException("Authentication required before role check");
         }
 
-        if (!required.includes(principal.role)) {
+        const requiredRoles = new Set(required);
+        const userRoles = new Set([principal.role]);
+
+        if (requiredRoles.isDisjointFrom(userRoles)) {
             throw new ForbiddenException(`Requires one of roles: ${required.join(", ")}`);
         }
 

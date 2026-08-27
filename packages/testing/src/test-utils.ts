@@ -159,55 +159,56 @@ export function createTestApplication(options?: {
                 server.close(() => resolve());
             }),
         inject: async (request: TestRequest): Promise<TestResponse> => {
-            return new Promise((resolve, reject) => {
-                const url = new URL(request.path, `http://localhost:${assignedPort}`);
+            const { promise, resolve, reject } = Promise.withResolvers<TestResponse>();
+            const url = new URL(request.path, `http://localhost:${assignedPort}`);
 
-                if (request.query) {
-                    for (const [key, value] of Object.entries(request.query)) {
-                        url.searchParams.set(key, value);
-                    }
+            if (request.query) {
+                for (const [key, value] of Object.entries(request.query)) {
+                    url.searchParams.set(key, value);
                 }
+            }
 
-                const options: http.RequestOptions = {
-                    hostname: "localhost",
-                    port: assignedPort,
-                    path: url.pathname + url.search,
-                    method: request.method || "GET",
-                    headers: {
-                        "content-type": "application/json",
-                        ...request.headers,
-                    },
-                };
+            const options: http.RequestOptions = {
+                hostname: "localhost",
+                port: assignedPort,
+                path: url.pathname + url.search,
+                method: request.method || "GET",
+                headers: {
+                    "content-type": "application/json",
+                    ...request.headers,
+                },
+            };
 
-                const req = http.request(options, (res) => {
-                    const chunks: Buffer[] = [];
-                    res.on("data", (chunk) => chunks.push(chunk));
-                    res.on("end", () => {
-                        const text = Buffer.concat(chunks).toString("utf8");
-                        let body: unknown;
-                        try {
-                            body = JSON.parse(text);
-                        } catch {
-                            body = text;
-                        }
+            const req = http.request(options, (res) => {
+                const chunks: Buffer[] = [];
+                res.on("data", (chunk) => chunks.push(chunk));
+                res.on("end", () => {
+                    const text = Buffer.concat(chunks).toString("utf8");
+                    let body: unknown;
+                    try {
+                        body = JSON.parse(text);
+                    } catch {
+                        body = text;
+                    }
 
-                        resolve({
-                            status: res.statusCode || 200,
-                            headers: res.headers,
-                            body,
-                            text,
-                        });
+                    resolve({
+                        status: res.statusCode || 200,
+                        headers: res.headers,
+                        body,
+                        text,
                     });
                 });
-
-                req.on("error", reject);
-
-                if (request.body) {
-                    req.write(JSON.stringify(request.body));
-                }
-
-                req.end();
             });
+
+            req.on("error", reject);
+
+            if (request.body) {
+                req.write(JSON.stringify(request.body));
+            }
+
+            req.end();
+
+            return promise;
         },
     };
 }

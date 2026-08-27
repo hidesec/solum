@@ -36,7 +36,7 @@ function segmentMatches(patternSegment: string, actualSegment: string): boolean 
 
     let regex = "";
     for (const ch of patternSegment) {
-        regex += ch === "*" ? "[^/]*" : "\\^$.|?+()[]{}".includes(ch) ? `\\${ch}` : ch;
+        regex += ch === "*" ? "[^/]*" : RegExp.escape(ch);
     }
     return new RegExp(`^${regex}$`).test(actualSegment);
 }

@@ -4,8 +4,12 @@ import { SolumjsRequest, SolumjsResponse } from "@solumjs/http";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+function isHttpError(err: unknown): err is HttpException {
+    return Error.isError(err) && err instanceof HttpException;
+}
+
 export function errorHandler(err: Error, req: SolumjsRequest, res: SolumjsResponse): void {
-    if (err instanceof HttpException) {
+    if (isHttpError(err)) {
         getFrameworkLogger().warn({ path: req.path, statusCode: err.statusCode }, err.message);
         res.status(err.statusCode).json({
             status: "error",

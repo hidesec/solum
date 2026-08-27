@@ -137,27 +137,28 @@ async function sendSmtpCommand(
     command: string,
     expectCode?: number
 ): Promise<{ code: number; message: string }> {
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error(`SMTP timeout on: ${command.split("\r\n")[0]}`)), 30000);
+    const { promise, resolve, reject } = Promise.withResolvers<{ code: number; message: string }>();
+    const timeout = setTimeout(() => reject(new Error(`SMTP timeout on: ${command.split("\r\n")[0]}`)), 30000);
 
-        const responseHandler = (data: Buffer) => {
-            const lines = data.toString().split("\r\n").filter((l) => l.length > 0);
-            const lastLine = lines[lines.length - 1];
-            const response = parseSmtpResponse(lastLine);
+    const responseHandler = (data: Buffer) => {
+        const lines = data.toString().split("\r\n").filter((l) => l.length > 0);
+        const lastLine = lines[lines.length - 1];
+        const response = parseSmtpResponse(lastLine);
 
-            clearTimeout(timeout);
-            socket.removeListener("data", responseHandler);
+        clearTimeout(timeout);
+        socket.removeListener("data", responseHandler);
 
-            if (expectCode && response.code !== expectCode) {
-                reject(new Error(`SMTP error: ${response.code} ${response.message}`));
-            } else {
-                resolve(response);
-            }
-        };
+        if (expectCode && response.code !== expectCode) {
+            reject(new Error(`SMTP error: ${response.code} ${response.message}`));
+        } else {
+            resolve(response);
+        }
+    };
 
-        socket.on("data", responseHandler);
-        socket.write(command);
-    });
+    socket.on("data", responseHandler);
+    socket.write(command);
+
+    return promise;
 }
 
 async function sendMailDirect(config: SmtpConfig, options: EmailOptions): Promise<void> {

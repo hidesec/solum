@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/auth",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "SolumJS auth: JWT service, password hashing, guards, RBAC roles",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,8 +14,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.2",
-    "@solumjs/http": "^0.2.2"
+    "@solumjs/core": "^0.3.0",
+    "@solumjs/http": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
@@ -30,6 +30,6 @@
     "directory": "packages/auth"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.0.0"
   }
 }

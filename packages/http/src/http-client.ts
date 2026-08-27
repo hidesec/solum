@@ -202,122 +202,123 @@ function isPrivateIP(ip: string): boolean {
 }
 
 function resolveAndCheck(hostname: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        dns.lookup(hostname, { all: true }, (err, addresses) => {
-            if (err) {
-                reject(new Error("SSRF protection: DNS resolution failed"));
+    const { promise, resolve, reject } = Promise.withResolvers<string>();
+    dns.lookup(hostname, { all: true }, (err, addresses) => {
+        if (err) {
+            reject(new Error("SSRF protection: DNS resolution failed"));
+            return;
+        }
+        for (const addr of addresses) {
+            if (isPrivateIP(addr.address)) {
+                reject(new Error("SSRF protection: resolved to private/internal address"));
                 return;
             }
-            for (const addr of addresses) {
-                if (isPrivateIP(addr.address)) {
-                    reject(new Error("SSRF protection: resolved to private/internal address"));
-                    return;
-                }
-            }
-            const pinned = addresses[0];
-            resolve(pinned.address);
-        });
+        }
+        const pinned = addresses[0];
+        resolve(pinned.address);
     });
+    return promise;
 }
 
 function makeRequest(options: RequestOptions, redirectCount = 0): Promise<unknown> {
-    return new Promise((resolve, reject) => {
-        const url = new URL(options.url);
+    const { promise, resolve, reject } = Promise.withResolvers<unknown>();
+    const url = new URL(options.url);
 
-        if (!["http:", "https:"].includes(url.protocol)) {
-            reject(new Error("SSRF protection: only HTTP/HTTPS protocols are allowed"));
-            return;
+    if (!["http:", "https:"].includes(url.protocol)) {
+        reject(new Error("SSRF protection: only HTTP/HTTPS protocols are allowed"));
+        return promise;
+    }
+
+    const hostname = url.hostname.toLowerCase();
+    if (
+        hostname.endsWith(".local") ||
+        hostname.endsWith(".internal")
+    ) {
+        reject(new Error("SSRF protection: requests to internal domains are blocked"));
+        return promise;
+    }
+
+    resolveAndCheck(hostname).then((pinnedIp) => {
+        const isHttps = url.protocol === "https:";
+        const client = isHttps ? https : http;
+
+        const headers: Record<string, string> = {
+            "content-type": "application/json",
+            ...options.headers,
+        };
+
+        const bodyStr = options.body ? JSON.stringify(options.body) : undefined;
+        if (bodyStr) {
+            headers["content-length"] = Buffer.byteLength(bodyStr).toString();
         }
 
-        const hostname = url.hostname.toLowerCase();
-        if (
-            hostname.endsWith(".local") ||
-            hostname.endsWith(".internal")
-        ) {
-            reject(new Error("SSRF protection: requests to internal domains are blocked"));
-            return;
-        }
+        const req = client.request(
+            {
+                hostname: pinnedIp,
+                servername: url.hostname,
+                port: url.port || (isHttps ? 443 : 80),
+                path: url.pathname + url.search,
+                method: options.method,
+                headers,
+                timeout: options.timeout || 30000,
+            },
+            (res) => {
+                if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                    if (redirectCount >= MAX_REDIRECTS) {
+                        reject(new Error("SSRF protection: too many redirects"));
+                        res.resume();
+                        return;
+                    }
+                    try {
+                        const redirectUrl = new URL(res.headers.location, options.url);
+                        res.resume();
+                        resolve(makeRequest({
+                            ...options,
+                            url: redirectUrl.toString(),
+                        }, redirectCount + 1));
+                    } catch {
+                        reject(new Error("SSRF protection: invalid redirect URL"));
+                        res.resume();
+                    }
+                    return;
+                }
 
-        resolveAndCheck(hostname).then((pinnedIp) => {
-            const isHttps = url.protocol === "https:";
-            const client = isHttps ? https : http;
+                const chunks: Buffer[] = [];
+                res.on("data", (chunk) => chunks.push(chunk));
+                res.on("end", () => {
+                    const text = Buffer.concat(chunks).toString("utf8");
+                    let body: unknown;
+                    try {
+                        body = JSON.parse(text);
+                    } catch {
+                        body = text;
+                    }
 
-            const headers: Record<string, string> = {
-                "content-type": "application/json",
-                ...options.headers,
-            };
-
-            const bodyStr = options.body ? JSON.stringify(options.body) : undefined;
-            if (bodyStr) {
-                headers["content-length"] = Buffer.byteLength(bodyStr).toString();
-            }
-
-            const req = client.request(
-                {
-                    hostname: pinnedIp,
-                    servername: url.hostname,
-                    port: url.port || (isHttps ? 443 : 80),
-                    path: url.pathname + url.search,
-                    method: options.method,
-                    headers,
-                    timeout: options.timeout || 30000,
-                },
-                (res) => {
-                    if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                        if (redirectCount >= MAX_REDIRECTS) {
-                            reject(new Error("SSRF protection: too many redirects"));
-                            res.resume();
-                            return;
-                        }
-                        try {
-                            const redirectUrl = new URL(res.headers.location, options.url);
-                            res.resume();
-                            resolve(makeRequest({
-                                ...options,
-                                url: redirectUrl.toString(),
-                            }, redirectCount + 1));
-                        } catch {
-                            reject(new Error("SSRF protection: invalid redirect URL"));
-                            res.resume();
-                        }
+                    if (res.statusCode && res.statusCode >= 400) {
+                        const error = new Error(`HTTP ${res.statusCode}: ${text}`);
+                        (error as any).statusCode = res.statusCode;
+                        (error as any).body = body;
+                        reject(error);
                         return;
                     }
 
-                    const chunks: Buffer[] = [];
-                    res.on("data", (chunk) => chunks.push(chunk));
-                    res.on("end", () => {
-                        const text = Buffer.concat(chunks).toString("utf8");
-                        let body: unknown;
-                        try {
-                            body = JSON.parse(text);
-                        } catch {
-                            body = text;
-                        }
-
-                        if (res.statusCode && res.statusCode >= 400) {
-                            const error = new Error(`HTTP ${res.statusCode}: ${text}`);
-                            (error as any).statusCode = res.statusCode;
-                            (error as any).body = body;
-                            reject(error);
-                            return;
-                        }
-
-                        resolve(body);
-                    });
-                }
-            );
-
-            req.on("error", reject);
-            req.on("timeout", () => {
-                req.destroy();
-                reject(new Error(`Request timeout after ${options.timeout || 30000}ms`));
-            });
-
-            if (bodyStr) {
-                req.write(bodyStr);
+                    resolve(body);
+                });
             }
+        );
 
-            req.end();
-        }).catch(reject);
-    });
+        req.on("error", reject);
+        req.on("timeout", () => {
+            req.destroy();
+            reject(new Error(`Request timeout after ${options.timeout || 30000}ms`));
+        });
+
+        if (bodyStr) {
+            req.write(bodyStr);
+        }
+
+        req.end();
+    }).catch(reject);
+
+    return promise;
 }

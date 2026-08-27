@@ -46,6 +46,7 @@ SolumJS is a full-stack backend framework inspired by Spring Boot, built entirel
 - **Decorator-Driven** — 90+ decorators for routing, validation, caching, auth, and more
 - **Zero Core Dependencies** — Framework core uses only Node.js built-ins
 - **TypeScript Native** — First-class TypeScript support with full type inference
+- **ES2026 Powered** — Uses modern JS features: `Promise.try`, `Promise.withResolvers`, `Array.fromAsync`, `Object.groupBy`, `Set` methods, `RegExp.escape`, `Error.isError`, `Disposable`/`AsyncDisposable`
 - **REST API** — Declarative routes with `@Get`, `@Post`, `@Put`, `@Patch`, `@Delete`
 - **ORM** — Entity decorators, query builder, 5 database dialects
 - **JWT Auth** — `JwtAuthGuard`, `RolesGuard`, `@PreAuthorize`, OAuth2
@@ -112,8 +113,8 @@ npm install @solumjs/websocket @solumjs/email
 
 ### Prerequisites
 
-- **Node.js** >= 18.0.0
-- **TypeScript** >= 5.0.0
+- **Node.js** >= 24.0.0 (required for ES2026 features)
+- **TypeScript** >= 6.0.0
 - **npm** >= 9.0.0
 
 ### Quick Start
@@ -138,9 +139,10 @@ npm install -D typescript @types/node ts-node-dev jest ts-jest @types/jest tscon
 ```json
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2025",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "lib": ["ES2025", "ESNext"],
     "outDir": "dist",
     "rootDir": "./src",
     "declaration": true,

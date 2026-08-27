@@ -208,52 +208,54 @@ export class OAuth2Client {
 }
 
 function httpPost(url: string, body: string, headers: Record<string, string>): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const parsed = new URL(url);
-        const client = parsed.protocol === "https:" ? https : http;
+    const { promise, resolve, reject } = Promise.withResolvers<string>();
+    const parsed = new URL(url);
+    const client = parsed.protocol === "https:" ? https : http;
 
-        const req = client.request(
-            {
-                hostname: parsed.hostname,
-                port: parsed.port,
-                path: parsed.pathname + parsed.search,
-                method: "POST",
-                headers: { ...headers, "Content-Length": Buffer.byteLength(body).toString() },
-            },
-            (res) => {
-                const chunks: Buffer[] = [];
-                res.on("data", (chunk) => chunks.push(chunk));
-                res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-            }
-        );
+    const req = client.request(
+        {
+            hostname: parsed.hostname,
+            port: parsed.port,
+            path: parsed.pathname + parsed.search,
+            method: "POST",
+            headers: { ...headers, "Content-Length": Buffer.byteLength(body).toString() },
+        },
+        (res) => {
+            const chunks: Buffer[] = [];
+            res.on("data", (chunk) => chunks.push(chunk));
+            res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+        }
+    );
 
-        req.on("error", reject);
-        req.write(body);
-        req.end();
-    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+
+    return promise;
 }
 
 function httpGet(url: string, headers: Record<string, string>): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const parsed = new URL(url);
-        const client = parsed.protocol === "https:" ? https : http;
+    const { promise, resolve, reject } = Promise.withResolvers<string>();
+    const parsed = new URL(url);
+    const client = parsed.protocol === "https:" ? https : http;
 
-        const req = client.request(
-            {
-                hostname: parsed.hostname,
-                port: parsed.port,
-                path: parsed.pathname + parsed.search,
-                method: "GET",
-                headers,
-            },
-            (res) => {
-                const chunks: Buffer[] = [];
-                res.on("data", (chunk) => chunks.push(chunk));
-                res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-            }
-        );
+    const req = client.request(
+        {
+            hostname: parsed.hostname,
+            port: parsed.port,
+            path: parsed.pathname + parsed.search,
+            method: "GET",
+            headers,
+        },
+        (res) => {
+            const chunks: Buffer[] = [];
+            res.on("data", (chunk) => chunks.push(chunk));
+            res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+        }
+    );
 
-        req.on("error", reject);
-        req.end();
-    });
+    req.on("error", reject);
+    req.end();
+
+    return promise;
 }

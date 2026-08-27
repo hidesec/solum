@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/websocket",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "SolumJS WebSocket support with decorator-based handlers",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.2.2"
+    "@solumjs/core": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
@@ -29,6 +29,6 @@
     "directory": "packages/websocket"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.0.0"
   }
 }

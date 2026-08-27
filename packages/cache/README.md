@@ -113,6 +113,28 @@ const key = resolveCacheKey("{0}:item:{1}", ["order-1", "item-2"]);
 // "order-1:item-2"
 ```
 
+## Disposable Cache Entries (ES2026 `using`)
+
+Auto-evicting cache entries using ES2026 Explicit Resource Management.
+
+```typescript
+import { DisposableCacheEntry, AsyncDisposableCacheEntry, cacheManager } from "@solumjs/cache";
+
+// Sync disposable - auto-evicts when leaving scope
+{
+    using entry = new DisposableCacheEntry(cacheManager, "temp:data", { foo: "bar" }, 300);
+    console.log(entry.value); // { foo: "bar" }
+    // automatically evicted when leaving this block
+}
+
+// Async disposable - for async contexts
+async function handleRequest() {
+    await using entry = new AsyncDisposableCacheEntry(cacheManager, "session:abc", sessionData, 600);
+    // entry.value is sessionData
+    // automatically evicted when leaving this async function
+}
+```
+
 ## License
 
 MIT

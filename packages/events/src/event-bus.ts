@@ -77,10 +77,8 @@ export class EventBus implements IEventBus {
             return;
         }
 
-        await Promise.all(
-            syncListeners.map(async (listener) => {
-                await this.invokeListener(listener, payload);
-            })
+        await Array.fromAsync(
+            syncListeners.map((listener) => this.invokeListener(listener, payload))
         );
     }
 
@@ -94,7 +92,7 @@ export class EventBus implements IEventBus {
 
             if (isAsyncListener(listener.target, listener.methodName)) {
                 setImmediate(() => {
-                    method.call(instance, payload).catch((err: unknown) => {
+                    Promise.try(() => method.call(instance, payload)).catch((err: unknown) => {
                         getFrameworkLogger().error(
                             { err, listener: `${listener.target.name}.${listener.methodName}` },
                             `Async event listener failed`
@@ -102,7 +100,7 @@ export class EventBus implements IEventBus {
                     });
                 });
             } else {
-                await method.call(instance, payload);
+                await Promise.try(() => method.call(instance, payload));
             }
         } catch (err) {
             getFrameworkLogger().error(
@@ -126,7 +124,7 @@ export class EventBus implements IEventBus {
 
                     if (isAsyncListener(listener.target, listener.methodName)) {
                         setImmediate(() => {
-                            method.call(instance, payload).catch((err: unknown) => {
+                            Promise.try(() => method.call(instance, payload)).catch((err: unknown) => {
                                 getFrameworkLogger().error(
                                     { err, listener: `${listener.target.name}.${listener.methodName}` },
                                     `Async transactional event listener failed`
@@ -134,7 +132,7 @@ export class EventBus implements IEventBus {
                             });
                         });
                     } else {
-                        await method.call(instance, payload);
+                        await Promise.try(() => method.call(instance, payload));
                     }
                 } catch (err) {
                     getFrameworkLogger().error(

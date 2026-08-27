@@ -56,13 +56,8 @@ export class RelationLoader<T extends object> {
     const result = await getQueryRunner().query(
       `SELECT * FROM ${qualifiedTarget} WHERE ${inverseFk.columnName} = ANY($1)`, [parentIds]
     );
-    const grouped = new Map<string, RawRow[]>();
-    result.rows.forEach((row: any) => {
-      const key = row[inverseFk.columnName];
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(row);
-    });
-    rows.forEach((r) => { r[relation.propertyName] = grouped.get(r.id) ?? []; });
+    const grouped = Object.groupBy(result.rows, (row: any) => String(row[inverseFk.columnName]));
+    rows.forEach((r) => { r[relation.propertyName] = grouped[String(r.id)] ?? []; });
   }
 
   private async attachManyToMany(rows: RawRow[], relation: RelationInfo): Promise<void> {
@@ -84,12 +79,10 @@ export class RelationLoader<T extends object> {
        JOIN ${qualifiedTarget} t ON t.id = jt.${inverseJoinColumn}
        WHERE jt.${joinColumn} = ANY($1)`, [parentIds]
     );
-    const grouped = new Map<string, RawRow[]>();
-    result.rows.forEach((row: any) => {
-      const { parent_id, ...rest } = row;
-      if (!grouped.has(parent_id)) grouped.set(parent_id, []);
-      grouped.get(parent_id)!.push(rest);
+    const grouped = Object.groupBy(result.rows, (row: any) => String(row.parent_id));
+    rows.forEach((r) => {
+      const matches = grouped[String(r.id)] ?? [];
+      r[relation.propertyName] = matches.map(({ parent_id, ...rest }: any) => rest);
     });
-    rows.forEach((r) => { r[relation.propertyName] = grouped.get(r.id) ?? []; });
   }
 }

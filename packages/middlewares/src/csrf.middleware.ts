@@ -76,7 +76,7 @@ export function csrfProtection(options: CsrfOptions): SolumjsMiddleware {
         }
 
         const headerToken = (req.headers[headerName] as string) ?? "";
-        if (headerToken !== token) {
+        if (headerToken.length !== token.length || !timingSafeEqual(Buffer.from(headerToken), Buffer.from(token))) {
             res.status(403).json({ status: "error", message: "CSRF token mismatch" });
             return;
         }

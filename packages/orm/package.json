@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/orm",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "SolumJS ORM: entity metadata, query builder, multi-dialect SQL, transactions",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,8 +14,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.3.3",
-    "@solumjs/http": "^0.3.3"
+    "@solumjs/core": "^0.3.4",
+    "@solumjs/http": "^0.3.4"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

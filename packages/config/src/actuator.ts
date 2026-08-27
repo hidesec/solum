@@ -83,7 +83,7 @@ export function mountActuator(adapter: HttpAdapter, options: ActuatorOptions = {
 
     const isLocalhost = (req: any): boolean => {
         const addr = req.socket?.remoteAddress ?? "";
-        return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1" || addr === "";
+        return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
     };
 
     const protectedHandler = (handler: (req: any, res: any) => void | Promise<void>) => (req: any, res: any) => {

@@ -1,6 +1,7 @@
 import http from "http";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { getFrameworkLogger } from "../framework-logger";
 
 export interface ConfigServerOptions {
@@ -131,7 +132,8 @@ export class ConfigServer {
                         return;
                     }
                     const authHeader = req.headers.authorization;
-                    if (!authHeader || authHeader !== `Bearer ${authToken}`) {
+                    const provided = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+                    if (!provided || !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(authToken))) {
                         res.writeHead(401, { "Content-Type": "application/json" });
                         res.end(JSON.stringify({ error: "Unauthorized" }));
                         return;
@@ -151,9 +153,9 @@ export class ConfigServer {
                             res.writeHead(200, { "Content-Type": "application/json" });
                             res.end(JSON.stringify(properties));
                         })
-                        .catch((error) => {
+                        .catch(() => {
                             res.writeHead(500);
-                            res.end(JSON.stringify({ error: (error as Error).message }));
+                            res.end(JSON.stringify({ error: "Failed to load configuration" }));
                         });
                     return;
                 }

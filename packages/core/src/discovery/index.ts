@@ -1,4 +1,5 @@
 import http from "http";
+import crypto from "crypto";
 import { getFrameworkLogger } from "../framework-logger";
 
 export interface ServiceInstance {
@@ -119,7 +120,8 @@ export function startRegistry(options: ServiceRegistryOptions = {}): http.Server
                 return;
             }
             const authHeader = req.headers.authorization;
-            if (!authHeader || authHeader !== `Bearer ${authToken}`) {
+            const provided = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+            if (!provided || !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(authToken))) {
                 res.writeHead(401, { "Content-Type": "application/json" });
                 res.end(JSON.stringify({ error: "Unauthorized" }));
                 return;

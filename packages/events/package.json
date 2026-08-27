@@ -1,6 +1,6 @@
 {
   "name": "@solumjs/events",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "SolumJS events: in-process event bus with @EventListener",
   "license": "MIT",
   "main": "dist/index.js",
@@ -14,8 +14,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@solumjs/core": "^0.3.3",
-    "@solumjs/orm": "^0.3.3"
+    "@solumjs/core": "^0.3.4",
+    "@solumjs/orm": "^0.3.4"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

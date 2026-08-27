@@ -97,13 +97,13 @@ export class OAuth2Client {
 
     constructor(private provider: OAuth2Provider) {
         if (!isSafeUrl(provider.authorizationUrl)) {
-            throw new Error("OAuth2 authorizationUrl must be a valid HTTPS or HTTP URL");
+            throw new Error("OAuth2 authorizationUrl must be a valid HTTPS URL");
         }
         if (!isSafeUrl(provider.tokenUrl)) {
-            throw new Error("OAuth2 tokenUrl must be a valid HTTPS or HTTP URL");
+            throw new Error("OAuth2 tokenUrl must be a valid HTTPS URL");
         }
         if (!isSafeUrl(provider.userInfoUrl)) {
-            throw new Error("OAuth2 userInfoUrl must be a valid HTTPS or HTTP URL");
+            throw new Error("OAuth2 userInfoUrl must be a valid HTTPS URL");
         }
     }
 

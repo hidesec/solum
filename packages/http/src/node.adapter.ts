@@ -155,7 +155,8 @@ function toSolumjsResponse(res: ServerResponse, req?: IncomingMessage): SolumjsR
                     if (closed || res.writableEnded) return false;
                     const payload =
                         typeof data === "string" ? data.replace(/\r?\n/g, "\ndata: ") : JSON.stringify(data);
-                    const frame = `${event ? `event: ${event}\n` : ""}data: ${payload}\n\n`;
+                    const safeEvent = event ? event.replace(/[\r\n]/g, "") : "";
+                    const frame = `${safeEvent ? `event: ${safeEvent}\n` : ""}data: ${payload}\n\n`;
                     return res.write(frame);
                 },
                 comment(text: string) {

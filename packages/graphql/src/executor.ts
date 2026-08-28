@@ -28,11 +28,14 @@ function getFieldDepth(field: ParsedField): number {
     return 1 + Math.max(...field.selections.map(getFieldDepth));
 }
 
-function checkQueryDepth(fields: ParsedField[]): void {
+function checkQueryFields(fields: ParsedField[]): void {
     for (const field of fields) {
         const depth = getFieldDepth(field);
         if (depth > MAX_QUERY_DEPTH) {
-            throw new Error(`Query depth ${depth} exceeds maximum allowed depth of ${MAX_QUERY_DEPTH}`);
+            throw new Error("Query depth exceeds maximum allowed depth");
+        }
+        if (field.selections) {
+            checkQueryFields(field.selections);
         }
     }
 }
@@ -50,21 +53,29 @@ function parseFields(query: string): ParsedField[] {
 
     let depthStack: ParsedField[][] = [fields];
     let currentList = fields;
+    let cumulativeDepth = 0;
 
     for (const line of lines) {
         let cleanLine = line.replace(/[()]/g, "").trim();
         if (!cleanLine || cleanLine.startsWith("query") || cleanLine.startsWith("mutation") || cleanLine.startsWith("subscription")) continue;
 
-        const openBraces = (line.match(/{/g) || []).length;
-        const closeBraces = (line.match(/}/g) || []).length;
+        let opens = 0;
+        let closes = 0;
+        for (const ch of cleanLine) {
+            if (ch === "{") opens++;
+            if (ch === "}") closes++;
+        }
 
         if (cleanLine.endsWith("{")) {
             cleanLine = cleanLine.replace(/{/, "").trim();
         }
 
         if (cleanLine.startsWith("}") || cleanLine === "}") {
-            depthStack.pop();
-            currentList = depthStack[depthStack.length - 1] || fields;
+            cumulativeDepth = Math.max(0, cumulativeDepth - closes);
+            for (let i = 0; i < closes; i++) {
+                depthStack.pop();
+                currentList = depthStack[depthStack.length - 1] || fields;
+            }
             continue;
         }
 
@@ -109,10 +120,11 @@ function parseFields(query: string): ParsedField[] {
 
         currentList.push(field);
 
-        if (openBraces > closeBraces) {
+        if (opens > 0) {
             field.selections = [];
             depthStack.push(field.selections);
             currentList = field.selections;
+            cumulativeDepth += opens;
         }
     }
 
@@ -183,7 +195,7 @@ export function executeGraphQL(
     try {
         const parsed = parseQuery(query);
 
-        checkQueryDepth(parsed.fields);
+        checkQueryFields(parsed.fields);
 
         const rootResolver = resolvers[parsed.type] || {};
 

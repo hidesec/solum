@@ -133,7 +133,7 @@ export class ConfigServer {
                     }
                     const authHeader = req.headers.authorization;
                     const provided = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
-                    if (!provided || !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(authToken))) {
+                    if (!provided || provided.length !== authToken.length || !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(authToken))) {
                         res.writeHead(401, { "Content-Type": "application/json" });
                         res.end(JSON.stringify({ error: "Unauthorized" }));
                         return;

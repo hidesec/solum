@@ -47,6 +47,8 @@ class GrpcClientFrame {
     }
 }
 
+const MAX_BUFFER_SIZE = 4 * 1024 * 1024;
+
 export function createGrpcClient(options: GrpcClientOptions = {}): GrpcClient {
     const logger = getFrameworkLogger();
     const host = options.host ?? "127.0.0.1";
@@ -54,9 +56,10 @@ export function createGrpcClient(options: GrpcClientOptions = {}): GrpcClient {
     const timeout = options.timeout ?? 5000;
     const maxRetries = options.maxRetries ?? 3;
 
-    let socket: net.Socket | null = null;
+    let socket: net.Socket | tls.TLSSocket | null = null;
     let buffer = Buffer.alloc(0);
     let connectionPromise: Promise<void> | null = null;
+    let bufferCheckInterval: ReturnType<typeof setInterval> | null = null;
 
     function connect(): Promise<void> {
         if (connectionPromise) return connectionPromise;
@@ -84,6 +87,11 @@ export function createGrpcClient(options: GrpcClientOptions = {}): GrpcClient {
 
             socket.on("data", (chunk: Buffer) => {
                 buffer = Buffer.concat([buffer, chunk]);
+                if (buffer.length > MAX_BUFFER_SIZE) {
+                    socket?.destroy();
+                    buffer = Buffer.alloc(0);
+                    connectionPromise = null;
+                }
             });
 
             socket.on("error", (error) => {
@@ -94,6 +102,7 @@ export function createGrpcClient(options: GrpcClientOptions = {}): GrpcClient {
 
             socket.on("close", () => {
                 connectionPromise = null;
+                buffer = Buffer.alloc(0);
             });
         });
 

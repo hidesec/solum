@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { SessionStore } from "./session";
 
 type RedisClientV4 = {
@@ -24,8 +25,7 @@ export class RedisSessionStore implements SessionStore {
     }
 
     get(id: string): Record<string, unknown> | undefined {
-        // Synchronous interface - return undefined, actual fetch happens async
-        // This is a limitation of the current SessionStore interface
+        this.getAsync(id).catch(() => {});
         return undefined;
     }
 
@@ -40,7 +40,6 @@ export class RedisSessionStore implements SessionStore {
     }
 
     set(id: string, data: Record<string, unknown>): void {
-        // Fire-and-forget for synchronous interface
         this.setAsync(id, data).catch(() => {});
     }
 
@@ -56,6 +55,28 @@ export class RedisSessionStore implements SessionStore {
 
     async destroyAsync(id: string): Promise<void> {
         await this.client.del(this.key(id));
+    }
+
+    destroyAll(): void {
+        this.destroyAllAsync().catch(() => {});
+    }
+
+    async destroyAllAsync(): Promise<void> {
+        const keys = await this.client.keys(`${this.prefix}*`);
+        for (const key of keys) {
+            await this.client.del(key);
+        }
+    }
+
+    regenerate(oldId: string, data: Record<string, unknown>): string {
+        const newId = randomUUID();
+        this.regenerateAsync(oldId, newId, data).catch(() => {});
+        return newId;
+    }
+
+    async regenerateAsync(oldId: string, newId: string, data: Record<string, unknown>): Promise<void> {
+        await this.client.del(this.key(oldId));
+        await this.setAsync(newId, data);
     }
 
     async sweepAsync(): Promise<number> {

@@ -35,6 +35,7 @@ export interface SolumjsRequest {
     cookies?: Record<string, string>;
     files?: UploadedFile[];
     session?: Session;
+    version?: string;
 }
 
 export interface CookieOptions {
@@ -53,14 +54,23 @@ export interface SolumEventStream {
     readonly closed: boolean;
 }
 
+export interface ContentNegotiator {
+    negotiate(): "json" | "xml" | "text" | "html";
+}
+
 export interface SolumjsResponse {
     status(code: number): this;
     json(body: unknown): void;
+    xml(body: unknown): void;
+    text(body: string): void;
+    html(body: string): void;
+    send(body: unknown, contentType?: string): void;
     end(): void;
     write(chunk: string | Buffer): boolean;
     setCookie(name: string, value: string, options?: CookieOptions): this;
     clearCookie(name: string, options?: CookieOptions): this;
     sse(): SolumEventStream;
+    negotiate: ContentNegotiator;
     readonly headersSent: boolean;
     raw: ServerResponse;
 }

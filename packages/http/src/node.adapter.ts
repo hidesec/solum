@@ -12,8 +12,10 @@ import {
     HandlerInterceptor,
 } from "./interceptor";
 import { serveStatic, StaticOptions } from "./static";
+import { objectToXml } from "./xml";
 import {
     CookieOptions,
+    ContentNegotiator,
     SolumEventStream,
     SolumjsLogger,
     SolumjsMiddleware,
@@ -50,8 +52,17 @@ function toSolumjsRequest(req: IncomingMessage, body: unknown, files?: import(".
     };
 }
 
-function toSolumjsResponse(res: ServerResponse): SolumjsResponse {
+function detectContentType(req: IncomingMessage): "json" | "xml" | "text" | "html" {
+    const accept = (req.headers["accept"] ?? "") as string;
+    if (accept.includes("application/xml") || accept.includes("text/xml")) return "xml";
+    if (accept.includes("text/html")) return "html";
+    if (accept.includes("text/plain")) return "text";
+    return "json";
+}
+
+function toSolumjsResponse(res: ServerResponse, req?: IncomingMessage): SolumjsResponse {
     let setCookieHeaders: string[] | undefined;
+    const negotiatedType = req ? detectContentType(req) : "json";
 
     function appendSetCookie(cookie: string): void {
         const existing = res.getHeader("set-cookie");
@@ -64,6 +75,10 @@ function toSolumjsResponse(res: ServerResponse): SolumjsResponse {
         res.setHeader("set-cookie", setCookieHeaders);
     }
 
+    const negotiator: ContentNegotiator = {
+        negotiate: () => negotiatedType,
+    };
+
     const wrapper: SolumjsResponse = {
         status(code: number) {
             res.statusCode = code;
@@ -71,7 +86,47 @@ function toSolumjsResponse(res: ServerResponse): SolumjsResponse {
         },
         json(body: unknown) {
             res.setHeader("content-type", "application/json; charset=utf-8");
+            res.setHeader("x-content-type-options", "nosniff");
             res.end(JSON.stringify(body));
+        },
+        xml(body: unknown) {
+            res.setHeader("content-type", "application/xml; charset=utf-8");
+            res.setHeader("x-content-type-options", "nosniff");
+            const xmlStr = typeof body === "string" ? body : objectToXml(body);
+            res.end(xmlStr);
+        },
+        text(body: string) {
+            res.setHeader("content-type", "text/plain; charset=utf-8");
+            res.setHeader("x-content-type-options", "nosniff");
+            res.end(body);
+        },
+        html(body: string) {
+            res.setHeader("content-type", "text/html; charset=utf-8");
+            res.setHeader("x-content-type-options", "nosniff");
+            res.end(body);
+        },
+        send(body: unknown, contentType?: string) {
+            res.setHeader("x-content-type-options", "nosniff");
+            if (contentType) {
+                res.setHeader("content-type", contentType);
+                res.end(typeof body === "string" ? body : JSON.stringify(body));
+                return;
+            }
+            const type = negotiatedType;
+            if (type === "xml") {
+                const xmlStr = typeof body === "string" ? body : objectToXml(body);
+                res.setHeader("content-type", "application/xml; charset=utf-8");
+                res.end(xmlStr);
+            } else if (type === "html") {
+                res.setHeader("content-type", "text/html; charset=utf-8");
+                res.end(typeof body === "string" ? body : JSON.stringify(body));
+            } else if (type === "text") {
+                res.setHeader("content-type", "text/plain; charset=utf-8");
+                res.end(typeof body === "string" ? body : JSON.stringify(body));
+            } else {
+                res.setHeader("content-type", "application/json; charset=utf-8");
+                res.end(JSON.stringify(body));
+            }
         },
         end() {
             res.end();
@@ -123,6 +178,7 @@ function toSolumjsResponse(res: ServerResponse): SolumjsResponse {
 
             return stream;
         },
+        negotiate: negotiator,
         get headersSent() {
             return res.headersSent;
         },
@@ -251,7 +307,7 @@ export class NodeHttpAdapter implements HttpAdapter {
         }
 
         const req = toSolumjsRequest(incoming, bodyResult.body, bodyResult.files);
-        const res = toSolumjsResponse(serverRes);
+        const res = toSolumjsResponse(serverRes, incoming);
 
         const stack: SolumjsMiddleware[] = [
             ...this.middlewares,

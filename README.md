@@ -48,6 +48,10 @@ SolumJS is a full-stack backend framework inspired by Spring Boot, built entirel
 - **TypeScript Native** — First-class TypeScript support with full type inference
 - **ES2026 Powered** — Uses modern JS features: `Promise.try`, `Promise.withResolvers`, `Array.fromAsync`, `Object.groupBy`, `Set` methods, `RegExp.escape`, `Error.isError`, `Disposable`/`AsyncDisposable`
 - **REST API** — Declarative routes with `@Get`, `@Post`, `@Put`, `@Patch`, `@Delete`
+- **HTTPS/TLS** — Built-in TLS server configuration with certificate management
+- **HTTP/2** — HTTP/2 protocol support with ALPN negotiation
+- **API Versioning** — URL prefix (`/api/v1/`) or header-based versioning with `@ApiVersion`
+- **Content Negotiation** — Accept header-based response formatting (JSON/XML/HTML/Text)
 - **ORM** — Entity decorators, query builder, 5 database dialects
 - **JWT Auth** — `JwtAuthGuard`, `RolesGuard`, `@PreAuthorize`, OAuth2
 - **Caching** — `@Cacheable`, `@CacheEvict`, `@CachePut` with InMemory store
@@ -57,6 +61,10 @@ SolumJS is a full-stack backend framework inspired by Spring Boot, built entirel
 - **AOP** — `@Aspect`, `@Around`, `@Before`, `@After`, `@LogExecution`
 - **WebSocket** — WebSocket handlers and STOMP protocol
 - **Email** — SMTP client with template engine
+- **GraphQL** — GraphQL schema builder, resolvers, and GraphiQL playground
+- **gRPC** — gRPC service definitions, server, and client with protobuf support
+- **Prometheus Metrics** — `/actuator/prometheus` endpoint for metrics export
+- **W3C TraceContext** — Distributed tracing with W3C TraceContext propagation
 
 ---
 
@@ -91,8 +99,8 @@ npm install @solumjs/websocket @solumjs/email
 |---------|---------|-------------|
 | `solumjs` | `npm i solumjs` | Meta package — installs all + CLI |
 | `@solumjs/core` | `npm i @solumjs/core` | IoC container, decorators, HTTP exceptions, resilience, metrics, tracing, i18n, batch, discovery, logger |
-| `@solumjs/http` | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors, pagination, session, HTTP clients, static files |
-| `@solumjs/config` | `npm i @solumjs/config` | `createApplication()`, `.env`/YAML loading, `@Value`, OpenAPI/Swagger, actuator endpoints |
+| `@solumjs/http` | `npm i @solumjs/http` | Router, REST decorators, guards, interceptors, pagination, session, HTTP clients, static files, TLS/HTTP2, content negotiation, XML |
+| `@solumjs/config` | `npm i @solumjs/config` | `createApplication()`, `.env`/YAML loading, `@Value`, OpenAPI/Swagger, actuator endpoints, Prometheus metrics |
 | `@solumjs/orm` | `npm i @solumjs/orm` | Entity/column decorators, query builder, relations, schema builder, 5 database dialects |
 | `@solumjs/database` | `npm i @solumjs/database` | `BaseRepository`, `@Transactional`, migrations, driver factory |
 | `@solumjs/auth` | `npm i @solumjs/auth` | JWT service, `JwtAuthGuard`, `RolesGuard`, `@PreAuthorize`, OAuth2 |
@@ -105,6 +113,8 @@ npm install @solumjs/websocket @solumjs/email
 | `@solumjs/testing` | `npm i @solumjs/testing` | `createTestApplication()`, `@MockBean`, `MockLogger` |
 | `@solumjs/websocket` | `npm i @solumjs/websocket` | WebSocket handlers, STOMP protocol, `@MessageMapping` |
 | `@solumjs/email` | `npm i @solumjs/email` | SMTP client, `@SmtpEmail`, `@MailSend`, template engine, test mode |
+| `@solumjs/graphql` | `npm i @solumjs/graphql` | GraphQL schema builder, `@Query`, `@Mutation`, `@Subscription`, GraphiQL |
+| `@solumjs/grpc` | `npm i @solumjs/grpc` | gRPC service definitions, `@GrpcService`, `@GrpcMethod`, server & client |
 | `@solumjs/cli` | `npm i -g @solumjs/cli` | `solum new`, `solum generate`, `solum test`, `solum db:migrate` |
 
 ---

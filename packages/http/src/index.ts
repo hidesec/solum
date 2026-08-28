@@ -3,6 +3,7 @@ export * from "./pagination";
 export * from "./http-adapter";
 export * from "./router";
 export * from "./node.adapter";
+export * from "./tls.adapter";
 export * from "./cookies";
 export * from "./path-match";
 export * from "./multipart";
@@ -10,6 +11,7 @@ export * from "./static";
 export * from "./session";
 export * from "./redis-session";
 export * from "./normalize";
+export * from "./xml";
 export {
     HttpClient,
     HttpGet,
@@ -36,6 +38,9 @@ export {
     getRoutesMetadata,
     getRegisteredControllers,
     MappingOptions,
+    SetApiVersionPrefix,
+    GetApiVersionPrefix,
+    ApiVersion,
 } from "./route.decorator";
 export * from "./response.decorator";
 export {

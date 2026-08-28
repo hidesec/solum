@@ -1,10 +1,12 @@
-import { randomUUID } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
 import { CookieOptions, Session, SolumjsMiddleware } from "./http-types";
 
 export interface SessionStore {
     get(id: string): Record<string, unknown> | undefined;
     set(id: string, data: Record<string, unknown>): void;
     destroy(id: string): void;
+    destroyAll(): void;
+    regenerate(oldId: string, data: Record<string, unknown>): string;
 }
 
 export class MemorySessionStore implements SessionStore {
@@ -31,6 +33,17 @@ export class MemorySessionStore implements SessionStore {
         this.sessions.delete(id);
     }
 
+    destroyAll(): void {
+        this.sessions.clear();
+    }
+
+    regenerate(oldId: string, data: Record<string, unknown>): string {
+        this.sessions.delete(oldId);
+        const newId = randomUUID();
+        this.sessions.set(newId, { data, expiresAt: Date.now() + this.ttlMs });
+        return newId;
+    }
+
     sweep(): number {
         const now = Date.now();
         let removed = 0;
@@ -53,21 +66,46 @@ export interface SessionOptions {
     cookieName?: string;
     ttlMs?: number;
     cookie?: Partial<CookieOptions>;
+    fixationProtection?: boolean;
+    maxAge?: number;
+}
+
+function safeSessionCompare(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 export function createSessionMiddleware(options: SessionOptions = {}): SolumjsMiddleware {
     const store = options.store ?? new MemorySessionStore(options.ttlMs);
     const cookieName = options.cookieName ?? "solum.sid";
+    const fixationProtection = options.fixationProtection ?? true;
     const cookieDefaults: Partial<CookieOptions> = { httpOnly: true, sameSite: "Lax", path: "/", secure: process.env.NODE_ENV === "production" };
+
+    if (options.maxAge) {
+        cookieDefaults.maxAge = options.maxAge;
+    }
 
     return (req, res, next) => {
         const cookies = req.cookies ?? {};
         const existingId = cookies[cookieName];
-        const id = existingId ?? randomUUID();
+        let id = existingId ?? randomUUID();
+        let isNewSession = false;
 
-        const storedData = existingId ? store.get(existingId) : undefined;
+        let storedData: Record<string, unknown> | undefined;
+        if (existingId) {
+            const data = store.get(existingId);
+            if (data) {
+                storedData = data;
+            } else {
+                isNewSession = true;
+                id = randomUUID();
+            }
+        } else {
+            isNewSession = true;
+        }
+
         const data: Record<string, unknown> = storedData ?? {};
-        if (!storedData) {
+        if (isNewSession) {
             store.set(id, data);
         }
 
@@ -83,25 +121,26 @@ export function createSessionMiddleware(options: SessionOptions = {}): SolumjsMi
             destroy() {
                 destroyed = true;
                 store.destroy(sessionId);
+                sessionId = "";
                 if (!res.headersSent) {
                     res.clearCookie(cookieName, { ...cookieDefaults, ...options.cookie, maxAge: 0 });
                 }
             },
             regenerate(): string {
-                store.destroy(sessionId);
-                const newId = randomUUID();
+                const oldId = sessionId;
+                const newId = store.regenerate(oldId, session.data);
                 sessionId = newId;
-                store.set(newId, session.data);
                 if (!res.headersSent) {
+                    res.clearCookie(cookieName, { ...cookieDefaults, ...options.cookie, maxAge: 0 });
                     res.setCookie(cookieName, newId, { ...cookieDefaults, ...options.cookie });
                 }
                 return newId;
             },
         };
 
-        req.session = session;
+        Object.defineProperty(req, "session", { value: session, writable: true, configurable: true });
 
-        if ((!existingId || !storedData) && !res.headersSent) {
+        if (isNewSession && !res.headersSent) {
             res.setCookie(cookieName, id, { ...cookieDefaults, ...options.cookie });
         }
 
@@ -111,6 +150,35 @@ export function createSessionMiddleware(options: SessionOptions = {}): SolumjsMi
             }
         });
 
+        next();
+    };
+}
+
+export function createLogoutMiddleware(cookieName: string = "solum.sid"): SolumjsMiddleware {
+    return (req, _res, next) => {
+        if (req.session) {
+            req.session.destroy();
+        }
+        next();
+    };
+}
+
+export function createFixationProtectionMiddleware(options: { loginPath?: string; cookieName?: string } = {}): SolumjsMiddleware {
+    const loginPath = options.loginPath ?? "/login";
+
+    return (req, res, next) => {
+        if (req.method === "POST" && req.path === loginPath) {
+            const originalEnd = res.raw.end.bind(res.raw);
+            res.raw.end = function (...args: any[]) {
+                const statusCode = res.raw.statusCode;
+                if (statusCode >= 200 && statusCode < 300) {
+                    if (req.session) {
+                        req.session.regenerate();
+                    }
+                }
+                return originalEnd(...args);
+            };
+        }
         next();
     };
 }

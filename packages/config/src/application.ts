@@ -8,7 +8,7 @@ import {
     setFrameworkConfig,
     setFrameworkLogger,
 } from "@solumjs/core";
-import { NodeHttpAdapter, SolumjsMiddleware } from "@solumjs/http";
+import { NodeHttpAdapter, SolumjsMiddleware, TlsOptions, loadTlsFromEnv, createSecureServer } from "@solumjs/http";
 import { runPreDestroyHooks } from "@solumjs/core";
 import { DatabaseDriver, registerDatabaseDriver } from "@solumjs/orm";
 import { connectMongo, createDatabaseDriver } from "@solumjs/database";
@@ -41,15 +41,17 @@ export interface CreateApplicationOptions {
     autoCache?: boolean;
     autoMongo?: boolean;
     docs?: boolean | DocsOptions;
-    onListen?: (port: number) => void;
+    onListen?: (port: number, protocol?: string) => void;
     shutdownTimeoutMs?: number;
     useYamlConfig?: boolean;
     configDir?: string;
     configFileName?: string;
+    tls?: TlsOptions;
+    http2?: boolean;
 }
 
 export interface SolumApplication {
-    server: import("http").Server;
+    server: import("http").Server | import("http2").Http2SecureServer;
     driver?: DatabaseDriver;
     port: number;
     shutdown(): Promise<void>;
@@ -123,6 +125,7 @@ export async function createApplication(
     }
 
     const port = options.port ?? config.getNumber("PORT") ?? 3000;
+    const tlsOptions = options.tls ?? loadTlsFromEnv();
 
     function gracefulShutdown(signal: string): void {
         logger.info(`${signal} received. shutting down gracefully...`);
@@ -153,15 +156,38 @@ export async function createApplication(
         process.exit(1);
     });
 
-    const server = adapter.listen(port, () => {
-        options.onListen?.(port);
-        const routes = listRegisteredRoutes();
-        logger.info(`Routes registered (${routes.length}):`);
-        routes.forEach((r) => {
-            logger.info(`  ${r.method.padEnd(6)} ${r.path}`);
+    let server: import("http").Server | import("http2").Http2SecureServer;
+
+    if (tlsOptions) {
+        server = createSecureServer(adapter, {
+            port,
+            tls: tlsOptions,
+            http2: { enabled: options.http2 ?? false },
+            onListen: (p, protocol) => {
+                options.onListen?.(p, protocol);
+                const routes = listRegisteredRoutes();
+                logger.info(`Routes registered (${routes.length}):`);
+                routes.forEach((r) => {
+                    logger.info(`  ${r.method.padEnd(6)} ${r.path}`);
+                });
+                startScheduledTasks();
+            },
+        }, (req, res) => {
+            (adapter as any).handle(req, res).catch((err: Error) => {
+                errorHandler(err, {} as any, {} as any);
+            });
         });
-        startScheduledTasks();
-    }) as import("http").Server;
+    } else {
+        server = adapter.listen(port, () => {
+            options.onListen?.(port, "http");
+            const routes = listRegisteredRoutes();
+            logger.info(`Routes registered (${routes.length}):`);
+            routes.forEach((r) => {
+                logger.info(`  ${r.method.padEnd(6)} ${r.path}`);
+            });
+            startScheduledTasks();
+        }) as import("http").Server;
+    }
 
     const application: SolumApplication = {
         server,
@@ -169,7 +195,13 @@ export async function createApplication(
         port,
         async shutdown(): Promise<void> {
             stopScheduledTasks();
-            await new Promise<void>((resolve) => server.close(() => resolve()));
+            await new Promise<void>((resolve) => {
+                if ("close" in server) {
+                    (server as any).close(() => resolve());
+                } else {
+                    resolve();
+                }
+            });
             if (driver) await driver.close();
             await runPreDestroyHooks();
         },

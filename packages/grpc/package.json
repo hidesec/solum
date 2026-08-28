@@ -1,0 +1,44 @@
+{
+  "name": "@solumjs/grpc",
+  "version": "0.3.5",
+  "description": "gRPC support for SolumJS framework",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "solumjs",
+    "grpc",
+    "protobuf",
+    "rpc",
+    "api"
+  ],
+  "author": "hidesec",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hidesec/solum",
+    "directory": "packages/grpc"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@solumjs/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "@types/node": "^24.0.0",
+    "jest": "^30.0.0",
+    "@jest/globals": "^30.0.0",
+    "ts-jest": "^29.0.0",
+    "@types/jest": "^30.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

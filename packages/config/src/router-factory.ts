@@ -1,7 +1,7 @@
 import { container } from "@solumjs/core";
 import { BadRequestException } from "@solumjs/core";
 import { toInstance, validateInstance } from "@solumjs/validation";
-import { ParamMetadata, ParamSource, ValidOptions, getClassGuards, getHandlerGuards, getParamType, getParamsMetadata, getRegisteredControllers, getResponseStatus, getRoutesMetadata, runGuards, getControllerInterceptors, getHandlerInterceptors, HandlerInterceptor, resolveInterceptors } from "@solumjs/http";
+import { ParamMetadata, ParamSource, ValidOptions, getClassGuards, getHandlerGuards, getParamType, getParamsMetadata, getRegisteredControllers, getResponseStatus, getRoutesMetadata, runGuards, getControllerInterceptors, getHandlerInterceptors, HandlerInterceptor, resolveInterceptors, GetApiVersionPrefix } from "@solumjs/http";
 import { findMostSpecificHandler, getExceptionHandlers, getRegisteredAdvice } from "@solumjs/middlewares";
 import { HttpAdapter } from "@solumjs/http";
 import { SolumjsNext, SolumjsRequest, SolumjsResponse } from "@solumjs/http";
@@ -208,8 +208,19 @@ function wrapHandler(
     };
 }
 
+function buildVersionPrefix(controllerVersion?: string, routeVersion?: string): string {
+    const versionPrefix = GetApiVersionPrefix();
+    const version = routeVersion ?? controllerVersion;
+
+    if (version && versionPrefix) {
+        return versionPrefix.replace(/:version/g, version);
+    }
+
+    return "";
+}
+
 export function mountControllers(adapter: HttpAdapter): void {
-    getRegisteredControllers().forEach(({ target, prefix }) => {
+    getRegisteredControllers().forEach(({ target, prefix, version }) => {
         const routes = getRoutesMetadata(target);
 
         if (routes.length === 0) {
@@ -219,13 +230,16 @@ export function mountControllers(adapter: HttpAdapter): void {
 
         const instance = container.resolve(target);
 
-        routes.forEach(({ method, path, handlerName }) => {
-            adapter.registerRoute(prefix, {
+        routes.forEach(({ method, path, handlerName, version: routeVersion }) => {
+            const versionPrefix = buildVersionPrefix(version, routeVersion);
+            const fullPrefix = versionPrefix ? joinPaths(versionPrefix, prefix) : prefix;
+
+            adapter.registerRoute(fullPrefix, {
                 method,
                 path,
                 handler: wrapHandler(instance, handlerName, target),
             });
-            registeredRoutes.push({ method: method.toUpperCase(), path: joinPaths(prefix, path) });
+            registeredRoutes.push({ method: method.toUpperCase(), path: joinPaths(fullPrefix, path) });
         });
     });
 }

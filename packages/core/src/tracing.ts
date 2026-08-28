@@ -11,6 +11,9 @@ export interface TraceSpan {
     status: "OK" | "ERROR";
     attributes: Record<string, string | number | boolean>;
     events: TraceEvent[];
+    traceFlags?: number;
+    traceState?: string;
+    sampled?: boolean;
 }
 
 export interface TraceEvent {
@@ -23,12 +26,21 @@ interface TraceContext {
     traceId: string;
     spanId: string;
     spans: TraceSpan[];
+    traceFlags: number;
+    traceState?: string;
+    sampled: boolean;
 }
 
 const traceStorage = new AsyncLocalStorage<TraceContext>();
 
-function generateId(): string {
-    return crypto.randomBytes(16).toString("hex");
+function generateId(bytes: number = 16): string {
+    return crypto.randomBytes(bytes).toString("hex");
+}
+
+function shouldSample(sampleRate: number): boolean {
+    if (sampleRate <= 0) return false;
+    if (sampleRate >= 1) return true;
+    return crypto.randomBytes(4).readUInt32BE(0) / 0xFFFFFFFF < sampleRate;
 }
 
 export function startTrace(name: string, attributes: Record<string, string | number | boolean> = {}): TraceSpan {
@@ -36,6 +48,9 @@ export function startTrace(name: string, attributes: Record<string, string | num
     const traceId = existing?.traceId || generateId();
     const spanId = generateId().slice(0, 16);
     const parentSpanId = existing?.spanId;
+    const traceFlags = existing?.traceFlags ?? 1;
+    const traceState = existing?.traceState;
+    const sampled = existing?.sampled ?? true;
 
     const span: TraceSpan = {
         traceId,
@@ -46,13 +61,16 @@ export function startTrace(name: string, attributes: Record<string, string | num
         status: "OK",
         attributes,
         events: [],
+        traceFlags,
+        traceState,
+        sampled,
     };
 
     if (existing) {
         existing.spans.push(span);
         existing.spanId = spanId;
     } else {
-        traceStorage.enterWith({ traceId, spanId, spans: [span] });
+        traceStorage.enterWith({ traceId, spanId, spans: [span], traceFlags, traceState, sampled });
     }
 
     return span;
@@ -146,7 +164,7 @@ export function createTraceMiddleware() {
                 events: [],
             };
 
-            traceStorage.run({ traceId, spanId, spans: [span] }, () => {
+            traceStorage.run({ traceId, spanId, spans: [span], traceFlags: 1, sampled: true }, () => {
                 next();
             });
 
@@ -191,4 +209,169 @@ export class InMemoryExporter implements TracingExporter {
     clear(): void {
         this.spans.length = 0;
     }
+}
+
+export interface W3CTraceContext {
+    traceparent: string;
+    tracestate?: string;
+}
+
+const TRACEPARENT_REGEX = /^00-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})(?:-([0-9a-f]{2}(?:-[0-9a-f]+)*))?$/;
+
+export function parseTraceparent(header: string): W3CTraceContext | null {
+    const match = header.match(TRACEPARENT_REGEX);
+    if (!match) return null;
+
+    return {
+        traceparent: header,
+        tracestate: undefined,
+    };
+}
+
+export function createTraceparent(traceId: string, spanId: string, traceFlags: number = 1): string {
+    const paddedFlags = traceFlags.toString(16).padStart(2, "0");
+    return `00-${traceId}-${spanId}-${paddedFlags}`;
+}
+
+export function extractW3CContext(headers: Record<string, string | string[] | undefined>): W3CTraceContext | null {
+    const traceparent = headers["traceparent"];
+    if (typeof traceparent !== "string") return null;
+
+    const parsed = parseTraceparent(traceparent);
+    if (!parsed) return null;
+
+    const tracestate = headers["tracestate"];
+    if (typeof tracestate === "string") {
+        parsed.tracestate = tracestate;
+    }
+
+    return parsed;
+}
+
+export function injectW3CContext(traceId: string, spanId: string, traceFlags: number = 1): Record<string, string> {
+    const headers: Record<string, string> = {
+        "traceparent": createTraceparent(traceId, spanId, traceFlags),
+    };
+
+    const ctx = traceStorage.getStore();
+    if (ctx?.traceState) {
+        headers["tracestate"] = ctx.traceState;
+    }
+
+    return headers;
+}
+
+const SAFE_HEADER_VALUE = /^[a-zA-Z0-9._\-]+$/;
+const MAX_HEADER_VALUE_LENGTH = 256;
+
+function sanitizeHeaderValue(value: string): string {
+    if (value.length > MAX_HEADER_VALUE_LENGTH) {
+        value = value.substring(0, MAX_HEADER_VALUE_LENGTH);
+    }
+    if (!SAFE_HEADER_VALUE.test(value)) {
+        return "";
+    }
+    return value;
+}
+
+export interface W3CTraceMiddlewareOptions {
+    sampleRate?: number;
+    propagateHeaders?: string[];
+    ignorePaths?: string[];
+}
+
+export function createW3CTraceMiddleware(options: W3CTraceMiddlewareOptions = {}) {
+    const collectedSpans: TraceSpan[] = [];
+    const sampleRate = options.sampleRate ?? 1.0;
+    const propagateHeaders = options.propagateHeaders ?? ["x-request-id", "x-correlation-id"];
+    const ignorePaths = options.ignorePaths ?? ["/actuator", "/health"];
+
+    return {
+        middleware(req: any, res: any, next: () => void) {
+            const path = req.url || "/";
+            if (ignorePaths.some((p) => path.startsWith(p))) {
+                next();
+                return;
+            }
+
+            const w3cCtx = extractW3CContext(req.headers || {});
+
+            let traceId: string;
+            let spanId: string;
+            let traceFlags: number = 1;
+            let traceState: string | undefined;
+            let sampled = true;
+
+            if (w3cCtx) {
+                const parts = w3cCtx.traceparent.split("-");
+                traceId = parts[1];
+                spanId = parts[2];
+                traceFlags = parseInt(parts[3], 16) || 1;
+                traceState = w3cCtx.tracestate;
+                sampled = (traceFlags & 1) === 1;
+            } else {
+                traceId = generateId();
+                spanId = generateId().slice(0, 16);
+                sampled = shouldSample(sampleRate);
+                traceFlags = sampled ? 1 : 0;
+            }
+
+            if (!sampled) {
+                next();
+                return;
+            }
+
+            const correlationHeaders: Record<string, string> = {};
+            for (const header of propagateHeaders) {
+                const value = req.headers?.[header];
+                if (typeof value === "string") {
+                    const sanitized = sanitizeHeaderValue(value);
+                    if (sanitized) {
+                        correlationHeaders[header] = sanitized;
+                    }
+                }
+            }
+
+            const span: TraceSpan = {
+                traceId,
+                spanId,
+                name: `${req.method || "unknown"} ${req.url || "/"}`,
+                startTime: Date.now(),
+                status: "OK",
+                attributes: {
+                    "http.method": req.method || "unknown",
+                    "http.url": req.url || "/",
+                    "http.user_agent": req.headers?.["user-agent"] || "",
+                    "trace_id": traceId,
+                    "span_id": spanId,
+                    "trace_flags": traceFlags,
+                    ...correlationHeaders,
+                },
+                events: [],
+                traceFlags,
+                traceState,
+                sampled,
+            };
+
+            const responseHeaders = injectW3CContext(traceId, spanId, traceFlags);
+            for (const [key, value] of Object.entries(responseHeaders)) {
+                res.setHeader?.(key, value);
+            }
+            for (const [key, value] of Object.entries(correlationHeaders)) {
+                res.setHeader?.(key, value);
+            }
+
+            traceStorage.run({ traceId, spanId, spans: [span], traceFlags, traceState, sampled }, () => {
+                next();
+            });
+
+            collectedSpans.push(span);
+        },
+        getCollectedSpans(): TraceSpan[] {
+            return collectedSpans;
+        },
+        clearSpans(): void {
+            collectedSpans.length = 0;
+        },
+    };
 }

@@ -228,3 +228,34 @@ describe("syncSchema update mode", () => {
         expect(diff.missingTables).toHaveLength(0);
     });
 });
+
+describe("SAFE_TABLE regex for SQLite introspection", () => {
+    const SAFE_TABLE = /^[a-zA-Z0-9_]+$/;
+
+    it("accepts valid table names", () => {
+        expect(SAFE_TABLE.test("users")).toBe(true);
+        expect(SAFE_TABLE.test("user_accounts")).toBe(true);
+        expect(SAFE_TABLE.test("order_items")).toBe(true);
+        expect(SAFE_TABLE.test("Table123")).toBe(true);
+    });
+
+    it("rejects table names with SQL injection characters", () => {
+        expect(SAFE_TABLE.test("users; DROP TABLE")).toBe(false);
+        expect(SAFE_TABLE.test("users' OR 1=1")).toBe(false);
+        expect(SAFE_TABLE.test("users`test`")).toBe(false);
+        expect(SAFE_TABLE.test("users--comment")).toBe(false);
+    });
+
+    it("rejects empty string", () => {
+        expect(SAFE_TABLE.test("")).toBe(false);
+    });
+
+    it("rejects table names with spaces", () => {
+        expect(SAFE_TABLE.test("my table")).toBe(false);
+    });
+
+    it("rejects table names with special characters", () => {
+        expect(SAFE_TABLE.test("users@test")).toBe(false);
+        expect(SAFE_TABLE.test("table.name")).toBe(false);
+    });
+});

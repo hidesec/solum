@@ -75,11 +75,87 @@ describe("UserService", () => {
         expect(executedStatements).toContain("COMMIT");
     });
 
+    it("should throw ConflictException when creating user with duplicate email", async () => {
+        const dto = { name: "Dup", email: "dup@test.com", password: "Pass123!" };
+        mockRepo.findByEmail.mockResolvedValueOnce({ id: "existing" } as any);
+
+        await expect(userService.createUser(dto)).rejects.toThrow("already registered");
+    });
+
     it("should throw NotFound when deleting missing user", async () => {
         mockRepo.findById.mockResolvedValueOnce(null);
 
         await expect(userService.deleteUser("missing-id")).rejects.toThrow("User with id missing-id not found");
         expect(mockRepo.deleteById).not.toHaveBeenCalled();
         expect(executedStatements).toContain("ROLLBACK");
+    });
+
+    it("should delete existing user successfully", async () => {
+        const user = { id: "del-1", name: "Del", email: "del@test.com", role: "USER", createdAt: new Date() };
+        mockRepo.findById.mockResolvedValueOnce(user as any);
+        mockRepo.deleteById.mockResolvedValueOnce(undefined as any);
+
+        await expect(userService.deleteUser("del-1")).resolves.toBeUndefined();
+        expect(mockRepo.deleteById).toHaveBeenCalledWith("del-1");
+        expect(executedStatements).toContain("BEGIN");
+        expect(executedStatements).toContain("COMMIT");
+    });
+
+    it("should getUserById return user when found", async () => {
+        const user = { id: "u1", name: "Test", email: "test@test.com", role: "USER", createdAt: new Date() };
+        mockRepo.findById.mockResolvedValueOnce(user as any);
+
+        const result = await userService.getUserById("u1");
+        expect(result).toEqual(user);
+    });
+
+    it("should getUserById throw NotFoundException when not found", async () => {
+        mockRepo.findById.mockResolvedValueOnce(null);
+
+        await expect(userService.getUserById("nonexistent")).rejects.toThrow("not found");
+    });
+
+    it("should findRecentByEmails call repository", async () => {
+        const users = [{ id: "1", email: "a@test.com", name: "A", role: "USER", createdAt: new Date() }];
+        mockRepo.findRecentByEmails.mockResolvedValueOnce(users as any);
+
+        const result = await userService.findRecentByEmails(["a@test.com"], 10);
+        expect(result).toEqual(users);
+        expect(mockRepo.findRecentByEmails).toHaveBeenCalledWith(["a@test.com"], 10);
+    });
+
+    it("should findRecentByEmails throw BadRequestException for empty emails", async () => {
+        await expect(userService.findRecentByEmails([], 10)).rejects.toThrow("emails must not be empty");
+    });
+
+    it("should findPage call repository", async () => {
+        const { PageRequest } = require("@solumjs/http");
+        const pageReq = PageRequest.of(1, 10);
+        const page = { items: [], total: 0, page: 1, size: 10 };
+        mockRepo.findPage.mockResolvedValueOnce(page as any);
+
+        const result = await userService.findPage(pageReq);
+        expect(result).toEqual(page);
+    });
+
+    it("should updateRole throw NotFoundException when user not found", async () => {
+        mockRepo.findById.mockResolvedValueOnce(null);
+
+        await expect(userService.updateRole("missing", "ADMIN" as any)).rejects.toThrow("not found");
+    });
+
+    it("should updateRole save and return updated user", async () => {
+        const user = { id: "u2", name: "Role", email: "role@test.com", role: "USER", createdAt: new Date() };
+        mockRepo.findById.mockResolvedValueOnce(user as any);
+        const updatedUser = { ...user, role: "ADMIN" };
+        mockRepo.save.mockResolvedValueOnce(updatedUser as any);
+
+        const result = await userService.updateRole("u2", "ADMIN" as any);
+        expect(result.role).toBe("ADMIN");
+        expect(mockRepo.save).toHaveBeenCalled();
+    });
+
+    it("should init log on PostConstruct", () => {
+        expect(() => userService.init()).not.toThrow();
     });
 });

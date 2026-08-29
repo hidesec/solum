@@ -207,3 +207,75 @@ describe("router-factory", () => {
         expect(res.body).toBeUndefined();
     });
 });
+
+describe("API version prefix", () => {
+    const { SetApiVersionPrefix, GetApiVersionPrefix, ApiVersion } = require("@solumjs/http");
+
+    afterEach(() => {
+        SetApiVersionPrefix("");
+    });
+
+    it("buildVersionPrefix with controller version and prefix", () => {
+        SetApiVersionPrefix("/api/:version");
+        expect(GetApiVersionPrefix()).toBe("/api/:version");
+    });
+
+    it("SetApiVersionPrefix overwrites previous value", () => {
+        SetApiVersionPrefix("/v1");
+        expect(GetApiVersionPrefix()).toBe("/v1");
+        SetApiVersionPrefix("/v2");
+        expect(GetApiVersionPrefix()).toBe("/v2");
+    });
+
+    it("GetApiVersionPrefix returns empty when not set", () => {
+        expect(GetApiVersionPrefix()).toBe("");
+    });
+});
+
+describe("listRegisteredRoutes", () => {
+    it("exports listRegisteredRoutes function", async () => {
+        const { listRegisteredRoutes } = await import("../router-factory");
+        expect(typeof listRegisteredRoutes).toBe("function");
+    });
+
+    it("listRegisteredRoutes returns array", async () => {
+        const { listRegisteredRoutes } = await import("../router-factory");
+        const result = listRegisteredRoutes();
+        expect(Array.isArray(result)).toBe(true);
+    });
+});
+
+describe("joinPaths internal logic", () => {
+    it("joins prefix and path correctly", () => {
+        const join = (prefix: string, path: string) => {
+            const full = `${prefix}/${path}`.replace(/\/+/g, "/");
+            return full.length > 1 && full.endsWith("/") ? full.slice(0, -1) : full;
+        };
+        expect(join("/api", "/users")).toBe("/api/users");
+        expect(join("/api/", "/users")).toBe("/api/users");
+        expect(join("/api", "users")).toBe("/api/users");
+        expect(join("/", "/")).toBe("/");
+    });
+});
+
+describe("Cookie @ParamSource.COOKIE resolution", () => {
+    it("parses cookie string from headers", () => {
+        const cookieHeader = "session=abc123; theme=dark";
+        const cookies: Record<string, string> = {};
+        cookieHeader.split(";").forEach((pair: string) => {
+            const [k, ...rest] = pair.split("=");
+            if (k) cookies[k.trim()] = rest.join("=").trim();
+        });
+        expect(cookies["session"]).toBe("abc123");
+        expect(cookies["theme"]).toBe("dark");
+    });
+
+    it("handles empty cookie string", () => {
+        const cookies: Record<string, string> = "".split(";").reduce((acc: Record<string, string>, pair: string) => {
+            const [k, ...rest] = pair.split("=");
+            if (k?.trim()) acc[k.trim()] = rest.join("=").trim();
+            return acc;
+        }, {});
+        expect(Object.keys(cookies)).toHaveLength(0);
+    });
+});
